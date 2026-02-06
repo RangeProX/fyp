@@ -1,0 +1,19 @@
+<div class="container">
+    <h1>Record your study session!</h1>
+    <form (ngSubmit)="startSession()" *ngIf="!isSessionActive">
+        <label for="subject">Subject:</label>
+        <input type="text" id="subject" name="subject" [(ngModel)]="subject">
+        <br>
+        <br>
+        <label for="notes">Notes (optional):</label>
+        <textarea id="notes" name="notes"></textarea>
+        <br>
+        <button type="submit">Start Session</button>
+    </form>
+
+    <div *ngIf="isSessionActive" class="session-active">
+        <h2>{{ subject }}</h2>
+        <div class="timer">{{ formatTime(elapsedSeconds) }}</div>
+        <button type="button" (click)="stopSession()" class="stop-button">Stop Session</button>
+    </div>
+</div>

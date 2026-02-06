@@ -1,6 +1,13 @@
 .container {
     margin-left: auto;
     margin-right: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    background-color: #81c0ff;
 }
 
 a {
@@ -16,5 +23,52 @@ a:hover {
 
 
 button {
-  cursor: pointer;
+    cursor: pointer;
+    width: 100%;
+    height: 40px;
+    background-color: lightblue;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 20px;
+    font-family: sans-serif;
+}
+
+button:hover {
+    background-color: #87ceeb;
+}
+
+form {
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    max-width: 600px; /* limit width so not clumped */
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+}
+
+label {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+input {
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.error {
+    color: rgb(255, 65, 65);
+    font-size: 14px;
+    margin-top: 5px;
 }

@@ -1,0 +1,17 @@
+.container {
+    border-collapse: collapse;
+    border-width: 3px;
+    border-style: solid;
+    width: 90%;
+    min-height: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.title {
+    font-size: 40px;
+    font-weight: 600;
+    color: #333;
+    padding: 10px;
+    text-align: center;
+}

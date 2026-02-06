@@ -1,0 +1,91 @@
+input {
+    height: 30px;
+    width: 50%;
+    padding: 8px 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+textarea {
+    width: 50%;
+    height: 100px;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    resize: vertical;
+}
+
+label {
+    font-size: 32px;
+    font-weight: 600;
+    color: #333;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    font-family: Arial, sans-serif;
+}
+
+h2 {
+    text-align: center;
+    color: #333;
+    font-family: Arial, sans-serif;
+    margin-top: 20px;
+}
+
+button {
+    cursor: pointer;
+    width: 40%;
+    height: 40px;
+    background-color: #8ae0ff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 20px;
+    font-family: sans-serif;
+    display: block;
+    margin: 0 auto;
+}
+
+button:hover {
+    background-color: #61c8ff;
+}
+
+.container {
+    text-align: center;
+    padding: 40px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.session-active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.timer {
+    font-size: 72px;
+    font-weight: bold;
+    color: #8ae0ff;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 10px;
+}
+
+.stop-button {
+    width: 40%;
+    background-color: #ff6b6b;
+}
+
+.stop-button:hover {
+    background-color: #ff5252;
+}
