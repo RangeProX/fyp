@@ -7,6 +7,7 @@ import { LoginComponent } from './pages/login/login';
 import { RegisterComponent } from './pages/register/register';
 import { Calendar } from './pages/calendar/calendar';
 import { Record } from './pages/record/record';
+import { Notes } from './pages/notes/notes';
 
 export const routes: Routes = [
   //not logged in
@@ -23,6 +24,7 @@ export const routes: Routes = [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'calendar', component: Calendar },
       { path: 'record', component: Record },
+      { path: 'notes', component: Notes },
     ],
   },
 

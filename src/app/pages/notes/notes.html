@@ -1,1 +1,12 @@
-<p>notes works!</p>
+<div class="container">
+    <div class="title">
+    Notes
+    </div>
+    <br>
+    <button class="upload-button" type="button" (click)="onUploadClick(fileInput)" [disabled]="uploading">
+        {{ uploading ? 'Uploading...' : 'Add Notes' }}
+    </button>
+    <input #fileInput type="file" class="file-input" (change)="onFileSelected($event)">
+    <div *ngIf="message" class="upload-message">{{ message }}</div>
+    <input class="search-bar" type="text" placeholder="Search..">
+</div>

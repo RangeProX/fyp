@@ -26,6 +26,30 @@ db.serialize(() => {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)
 	`);
+
+	// File metadata table
+	db.run(`
+		CREATE TABLE IF NOT EXISTS files (
+			id TEXT PRIMARY KEY,
+			owner_id INTEGER NOT NULL,
+			original_name TEXT NOT NULL,
+			mime_type TEXT NOT NULL,
+			size INTEGER NOT NULL,
+			storage_path TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)
+	`);
+
+	// File permissions table
+	db.run(`
+		CREATE TABLE IF NOT EXISTS file_permissions (
+			file_id TEXT NOT NULL,
+			user_id INTEGER NOT NULL,
+			role TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(file_id, user_id)
+		)
+	`);
 });
 
 export default db;

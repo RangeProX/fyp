@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.routes.js';
+import filesRoutes from './routes/files.routes.js';
 import db from './config/db.js';
 
 const app = express();
@@ -27,6 +28,7 @@ app.get('/api/users', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/files', filesRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ message: 'Backend is running' });
