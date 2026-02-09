@@ -1,24 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import db from '../config/db.js';
+import prisma from '../config/prisma.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const backendRoot = path.join(__dirname, '../../');
 
-const getFileAccess = (fileId, userId, callback) => {
-  db.get(
-    'SELECT role FROM file_permissions WHERE file_id = ? AND user_id = ?',
-    [fileId, userId],
-    (err, row) => {
-      if (err) return callback(err);
-      return callback(null, row || null);
-    }
-  );
-};
-
-export const uploadFile = (req, res) => {
+export const uploadFile = async (req, res) => {
   const file = req.file;
   const fileId = req.fileId;
   const userId = req.user?.id;
@@ -29,61 +18,70 @@ export const uploadFile = (req, res) => {
 
   const relativePath = path.relative(backendRoot, file.path);
 
-  db.run(
-    'INSERT INTO files (id, owner_id, original_name, mime_type, size, storage_path) VALUES (?, ?, ?, ?, ?, ?)',
-    [fileId, userId, file.originalname, file.mimetype, file.size, relativePath],
-    function (err) {
-      if (err) {
-        fs.unlink(file.path, () => {});
-        return res.status(500).json({ message: 'Upload failed' });
-      }
+  try {
+    await prisma.$transaction([
+      prisma.file.create({
+        data: {
+          id: fileId,
+          ownerId: userId,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          storagePath: relativePath,
+        },
+      }),
+      prisma.filePermission.create({
+        data: {
+          fileId,
+          userId,
+          role: 'owner',
+        },
+      }),
+    ]);
 
-      db.run(
-        'INSERT INTO file_permissions (file_id, user_id, role) VALUES (?, ?, ?)',
-        [fileId, userId, 'owner'],
-        (permErr) => {
-          if (permErr) {
-            fs.unlink(file.path, () => {});
-            return res.status(500).json({ message: 'Upload failed' });
-          }
-
-          res.status(201).json({
-            id: fileId,
-            name: file.originalname,
-            size: file.size,
-            mimeType: file.mimetype,
-          });
-        }
-      );
-    }
-  );
+    res.status(201).json({
+      id: fileId,
+      name: file.originalname,
+      size: file.size,
+      mimeType: file.mimetype,
+    });
+  } catch (err) {
+    fs.unlink(file.path, () => {});
+    res.status(500).json({ message: 'Upload failed' });
+  }
 };
 
-export const listFiles = (req, res) => {
+export const listFiles = async (req, res) => {
   const userId = req.user?.id;
   if (!userId) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  db.all(
-    `
-      SELECT f.id, f.original_name, f.mime_type, f.size, f.created_at, f.owner_id
-      FROM files f
-      JOIN file_permissions p ON p.file_id = f.id
-      WHERE p.user_id = ?
-      ORDER BY f.created_at DESC
-    `,
-    [userId],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ message: 'Failed to fetch files' });
-      }
-      res.json(rows || []);
-    }
-  );
+  try {
+    const rows = await prisma.file.findMany({
+      where: {
+        permissions: {
+          some: { userId },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        originalName: true,
+        mimeType: true,
+        size: true,
+        createdAt: true,
+        ownerId: true,
+      },
+    });
+
+    res.json(rows || []);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch files' });
+  }
 };
 
-export const downloadFile = (req, res) => {
+export const downloadFile = async (req, res) => {
   const userId = req.user?.id;
   const fileId = req.params.id;
 
@@ -91,33 +89,34 @@ export const downloadFile = (req, res) => {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  getFileAccess(fileId, userId, (accessErr, access) => {
-    if (accessErr) {
-      return res.status(500).json({ message: 'Failed to fetch permissions' });
-    }
+  try {
+    const access = await prisma.filePermission.findUnique({
+      where: {
+        fileId_userId: { fileId, userId },
+      },
+    });
+
     if (!access) {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    db.get('SELECT * FROM files WHERE id = ?', [fileId], (err, file) => {
-      if (err) {
-        return res.status(500).json({ message: 'Failed to fetch file' });
-      }
-      if (!file) {
-        return res.status(404).json({ message: 'File not found' });
-      }
+    const file = await prisma.file.findUnique({ where: { id: fileId } });
+    if (!file) {
+      return res.status(404).json({ message: 'File not found' });
+    }
 
-      const absolutePath = path.join(backendRoot, file.storage_path);
-      if (!fs.existsSync(absolutePath)) {
-        return res.status(404).json({ message: 'File not found' });
-      }
+    const absolutePath = path.join(backendRoot, file.storagePath);
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ message: 'File not found' });
+    }
 
-      res.download(absolutePath, file.original_name);
-    });
-  });
+    res.download(absolutePath, file.originalName);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch file' });
+  }
 };
 
-export const shareFile = (req, res) => {
+export const shareFile = async (req, res) => {
   const userId = req.user?.id;
   const fileId = req.params.id;
   const { username, role } = req.body || {};
@@ -130,32 +129,36 @@ export const shareFile = (req, res) => {
     return res.status(400).json({ message: 'Username required' });
   }
 
-  getFileAccess(fileId, userId, (accessErr, access) => {
-    if (accessErr) {
-      return res.status(500).json({ message: 'Failed to fetch permissions' });
-    }
+  try {
+    const access = await prisma.filePermission.findUnique({
+      where: {
+        fileId_userId: { fileId, userId },
+      },
+    });
+
     if (!access || access.role !== 'owner') {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    db.get('SELECT id FROM users_auth WHERE username = ?', [username], (err, user) => {
-      if (err) {
-        return res.status(500).json({ message: 'Failed to fetch user' });
-      }
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
+    const user = await prisma.userAuth.findUnique({ where: { username } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-      db.run(
-        'INSERT OR REPLACE INTO file_permissions (file_id, user_id, role) VALUES (?, ?, ?)',
-        [fileId, user.id, resolvedRole],
-        (permErr) => {
-          if (permErr) {
-            return res.status(500).json({ message: 'Failed to share file' });
-          }
-          res.json({ message: 'File shared' });
-        }
-      );
+    await prisma.filePermission.upsert({
+      where: {
+        fileId_userId: { fileId, userId: user.id },
+      },
+      update: { role: resolvedRole },
+      create: {
+        fileId,
+        userId: user.id,
+        role: resolvedRole,
+      },
     });
-  });
+
+    res.json({ message: 'File shared' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to share file' });
+  }
 };

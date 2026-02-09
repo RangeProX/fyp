@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.routes.js';
 import filesRoutes from './routes/files.routes.js';
-import db from './config/db.js';
+import prisma from './config/prisma.js';
 
 const app = express();
 
@@ -18,13 +18,16 @@ app.get('/api/health', (req, res) => {
 });
 
 // development: Get all users (remove in production)
-app.get('/api/users', (req, res) => {
-   db.all('SELECT id, username, created_at FROM users_auth', (err, users) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error fetching users' });
-    }
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await prisma.userAuth.findMany({
+      select: { id: true, username: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
     res.json(users || []);
-  });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching users' });
+  }
 });
 
 app.use('/api/auth', authRoutes);
