@@ -27,14 +27,59 @@ const storage = multer.diskStorage({
   },
 });
 
+const allowedMimeTypes = new Set([
+  'application/pdf',
+  'image/png',
+  'image/jpg',
+  'image/jpeg',
+  'text/plain',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
+
+const allowedExtension = new Set([
+  '.pdf',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.txt',
+  '.doc',
+  '.docx',
+]);
+
 const upload = multer({
   storage,
+  fileFilter: (req, file, cb) => {
+    if (!allowedMimeTypes.has(file.mimetype)) {
+      const err = new Error('Unsupported file type');
+      err.status = 400;
+      return cb(err);
+    }
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!allowedExtension.has(ext)) {
+      const err = new Error('Unsupported file type');
+      err.status = 400;
+      return cb(err);
+    }
+    
+    return cb(null, true);
+  },
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 const router = express.Router();
 
-router.post('/upload', authMiddleware, upload.single('file'), uploadFile);
+router.post('/upload', authMiddleware, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'File too large (max 10MB)' });
+      }
+      return res.status(err.status || 400).json({ message: err.message || 'Invalid upload' });
+    }
+    return next();
+  });
+}, uploadFile);
 router.get('/', authMiddleware, listFiles);
 router.get('/:id', authMiddleware, downloadFile);
 router.post('/:id/share', authMiddleware, shareFile);
