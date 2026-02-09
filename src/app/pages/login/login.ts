@@ -72,4 +72,10 @@ export class LoginComponent {
       this.errorMessage = '';
     }
   }
+
+  showPassword = false;
+
+  togglePasswordVisibility() {
+    this.showPassword = !this.showPassword;
+  }
 }
