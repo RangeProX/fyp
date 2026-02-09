@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Auth } from '../../core/auth/auth';
 import { Router } from '@angular/router';
@@ -18,7 +18,7 @@ export class RegisterComponent {
   confirmPassword = '';
   errorMessage = '';
 
-  constructor(private auth: Auth, private router: Router) {}
+  constructor(private auth: Auth, private router: Router, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.username = '';
@@ -39,8 +39,14 @@ export class RegisterComponent {
         alert('Registration successful! Please log in.');
         this.router.navigate(['/login']);
       },
-      error: () => {
+      error: (err) => {
+        if (err?.status === 400 && err?.error?.message) {
+          this.errorMessage = "This username is already taken, please choose another one.";
+          this.cdr.detectChanges();
+          return;
+        }
         this.errorMessage = 'Registration failed';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -62,4 +68,14 @@ export class RegisterComponent {
       this.errorMessage = 'Passwords do not match';
     }
   }
+
+  show: Record<string, boolean> = {
+  password: false,
+  confirmPassword: false,
+};
+
+toggle(field: 'password' | 'confirmPassword') {
+  this.show[field] = !this.show[field];
+}
+
 }

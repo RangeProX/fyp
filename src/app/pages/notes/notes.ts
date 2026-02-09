@@ -1,12 +1,11 @@
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-notes',
-  imports: [RouterLink, CommonModule],
+  imports: [CommonModule],
   templateUrl: './notes.html',
   styleUrl: './notes.css',
 })

@@ -5,10 +5,48 @@
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" [(ngModel)]="username" (ngModelChange)="onInputChange()" (blur)="onInputBlur()" required>
         <label for="password">Password:</label>
-        <input type="password" id="password" name="password" [(ngModel)]="password" (ngModelChange)="onInputChange()" (blur)="onInputBlur()" required>
+        <div class="password-field">
+            <input [type]="show['password'] ? 'text' : 'password'" id="password" name="password" [(ngModel)]="password" (ngModelChange)="onInputChange()" (blur)="onInputBlur()" required>
+            <span class="toggle-icon" (click)="toggle('password')" aria-label="Toggle password visibility" role="button">
+                <ng-container *ngIf="show['password']; else hiddenIcon">
+                    <!-- open eye icon -->
+                    <svg stroke="currentColor" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+                    </svg>
+                </ng-container>
+                <ng-template #hiddenIcon>
+                    <!-- closed eye icon -->
+                    <svg stroke="currentColor" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 012.64-4.362M9.88 9.88a3 3 0 104.24 4.24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <path d="M3 3l18 18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <path d="M10.73 5.08A9.97 9.97 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-4.132 5.411" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </ng-template>
+            </span>
+        </div>
         Password must be at least 8 characters long and include a number and a special character.
         <label for="confirmPassword">Confirm Password:</label>
-        <input type="password" id="confirmPassword" name="confirmPassword" [(ngModel)]="confirmPassword" (ngModelChange)="onInputChange()" (blur)="onInputBlur()" required>
+        <div class="password-field">
+            <input [type]="show['confirmPassword'] ? 'text' : 'password'" id="confirmPassword" name="confirmPassword" [(ngModel)]="confirmPassword" (ngModelChange)="onInputChange()" (blur)="onInputBlur()" required>
+            <span class="toggle-icon" (click)="toggle('confirmPassword')" aria-label="Toggle confirm password visibility" role="button">
+                <ng-container *ngIf="show['confirmPassword']; else hiddenConfirmIcon">
+                    <!-- open eye icon -->
+                    <svg stroke="currentColor" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+                    </svg>
+                </ng-container>
+                <ng-template #hiddenConfirmIcon>
+                    <!-- closed eye icon -->
+                    <svg stroke="currentColor" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 012.64-4.362M9.88 9.88a3 3 0 104.24 4.24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <path d="M3 3l18 18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <path d="M10.73 5.08A9.97 9.97 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-4.132 5.411" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </ng-template>
+            </span>
+        </div>
         <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
         </div>
         <button type="submit">Register</button>
