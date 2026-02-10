@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
@@ -13,11 +13,15 @@ import { NotesList } from '../../widgets/notes-list/notes-list';
 export class Notes {
   uploading = false;
   message = '';
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  @ViewChild(NotesList) notesList!: NotesList;
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
-  onUploadClick(input: HTMLInputElement) {
-    input.click();
+  triggerFileInput() {
+    if (this.fileInput?.nativeElement) {
+      this.fileInput.nativeElement.click();
+    }
   }
 
   onFileSelected(event: Event) {
@@ -41,7 +45,12 @@ export class Notes {
       .subscribe({
         next: () => {
           this.message = 'File uploaded successfully';
+          this.notesList.loadFiles();
           this.cdr.detectChanges();
+          setTimeout(() => {
+            this.message = '';
+            this.cdr.detectChanges();
+          }, 3000);
         },
         error: (err) => {
           const serverMessage = typeof err?.error === 'string' ? err.error : err?.error?.message;

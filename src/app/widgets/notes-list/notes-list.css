@@ -1,6 +1,139 @@
 .container {
-    border: 1px solid #000;
     width: 100%;
-    height: 100%;
+    padding: 20px;
+}
+
+.notes-list-wrapper {
     display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.list-header h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+}
+
+.refresh-btn {
+    padding: 8px 16px;
+    background-color: #60a5fa;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.refresh-btn:disabled {
+    background-color: #93c5fd;
+    cursor: not-allowed;
+}
+
+.refresh-btn:hover:not(:disabled) {
+    background-color: #3b82f6;
+}
+
+.state-message {
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 16px;
+    color: #666;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+}
+
+.state-message.error {
+    color: #d32f2f;
+    background-color: #ffebee;
+}
+
+.state-message.empty {
+    color: #666;
+}
+
+.files-table {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.5fr 0.8fr;
+    gap: 16px;
+    padding: 16px;
+    background-color: #f5f5f5;
+    font-weight: 600;
+    border-bottom: 2px solid #ddd;
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.5fr 0.8fr;
+    gap: 16px;
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    align-items: center;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.table-row:hover {
+    background-color: #fafafa;
+}
+
+.col-name {
+    min-width: 0;
+    word-break: break-word;
+    color: #333;
+    font-weight: 500;
+}
+
+.col-type {
+    color: #666;
+    font-size: 14px;
+}
+
+.col-size {
+    color: #666;
+    font-size: 14px;
+}
+
+.col-date {
+    color: #999;
+    font-size: 13px;
+}
+
+.col-actions {
+    text-align: center;
+}
+
+.delete-btn {
+    padding: 6px 12px;
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+.delete-btn:hover {
+    background-color: #dc2626;
+}
+
+.delete-btn:active {
+    background-color: #b91c1c;
 }

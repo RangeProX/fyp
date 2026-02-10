@@ -1,4 +1,39 @@
 <div class="container">
-Upload your notes here.
-<!-- TODO: display notes from /upload/ -->
+  <div class="notes-list-wrapper">
+    <div class="list-header">
+      <h2>Your Notes</h2>
+      <button class="refresh-btn" (click)="loadFiles()" [disabled]="loading">
+        {{ loading ? 'Loading...' : 'Refresh' }}
+      </button>
+    </div>
+
+    <div *ngIf="loading" class="state-message">Loading files...</div>
+    
+    <div *ngIf="error && !loading" class="state-message error">{{ error }}</div>
+    
+    <div *ngIf="!loading && !error && files.length === 0" class="state-message empty">
+      No files uploaded yet. Upload your first note above.
+    </div>
+
+    <div *ngIf="!loading && !error && files.length > 0" class="files-table">
+      <div class="table-header">
+        <div class="col-name">File Name</div>
+        <div class="col-type">Type</div>
+        <div class="col-size">Size</div>
+        <div class="col-date">Date</div>
+        <div class="col-actions">Actions</div>
+      </div>
+      <div *ngFor="let file of files" class="table-row">
+        <div class="col-name">{{ file.originalName }}</div>
+        <div class="col-type">{{ file.mimeType }}</div>
+        <div class="col-size">{{ formatFileSize(file.size) }}</div>
+        <div class="col-date">{{ formatDate(file.createdAt) }}</div>
+        <div class="col-actions">
+          <button class="delete-btn" (click)="deleteFile(file.id)" title="Delete file">
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

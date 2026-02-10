@@ -166,3 +166,46 @@ export const shareFile = async (req, res) => {
     res.status(500).json({ message: 'Failed to share file' });
   }
 };
+
+export const deleteFile = async (req, res) => {
+  const userId = req.user?.id;
+  const fileId = req.params.id;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  try {
+    const access = await prisma.filePermission.findUnique({
+      where: {
+        fileId_userId: { fileId, userId },
+      },
+    });
+
+    if (!access || access.role !== 'owner') {
+      return res.status(403).json({ message: 'Only the owner can delete this file.' });
+    }
+
+    const file = await prisma.file.findUnique({ where: { id: fileId } });
+    if (!file) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    // Delete file from disk
+    const absolutePath = path.join(backendRoot, file.storagePath);
+    if (fs.existsSync(absolutePath)) {
+      fs.unlinkSync(absolutePath);
+    }
+
+    // Delete database records
+    await prisma.$transaction([
+      prisma.filePermission.deleteMany({ where: { fileId } }),
+      prisma.file.delete({ where: { id: fileId } }),
+    ]);
+
+    res.json({ message: 'File deleted' });
+  } catch (err) {
+    console.error('Delete file error:', err);
+    res.status(500).json({ message: 'Failed to delete file' });
+  }
+};
