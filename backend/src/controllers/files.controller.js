@@ -18,6 +18,7 @@ export const uploadFile = async (req, res) => {
 
   const relativePath = path.relative(backendRoot, file.path);
 
+  // create row for file and persmission
   try {
     await prisma.$transaction([
       prisma.file.create({
@@ -46,6 +47,7 @@ export const uploadFile = async (req, res) => {
       mimeType: file.mimetype,
     });
   } catch (err) {
+    // if error, delete uploaded file
     fs.unlink(file.path, () => {});
     res.status(500).json({ message: 'Upload failed' });
   }
@@ -53,10 +55,12 @@ export const uploadFile = async (req, res) => {
 
 export const listFiles = async (req, res) => {
   const userId = req.user?.id;
+  // check if user is logged in
   if (!userId) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
+  // display all files user has access to
   try {
     const rows = await prisma.file.findMany({
       where: {
@@ -97,7 +101,7 @@ export const downloadFile = async (req, res) => {
     });
 
     if (!access) {
-      return res.status(403).json({ message: 'Forbidden' });
+      return res.status(403).json({ message: 'You have no access to this file.' });
     }
 
     const file = await prisma.file.findUnique({ where: { id: fileId } });
@@ -137,7 +141,7 @@ export const shareFile = async (req, res) => {
     });
 
     if (!access || access.role !== 'owner') {
-      return res.status(403).json({ message: 'Forbidden' });
+      return res.status(403).json({ message: 'You have no access to this file.' });
     }
 
     const user = await prisma.userAuth.findUnique({ where: { username } });

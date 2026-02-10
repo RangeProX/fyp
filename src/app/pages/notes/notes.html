@@ -3,10 +3,15 @@
     Notes
     </div>
     <br>
-    <button class="upload-button" type="button" (click)="onUploadClick(fileInput)" [disabled]="uploading">
-        {{ uploading ? 'Uploading...' : 'Add Notes' }}
-    </button>
-    <input #fileInput type="file" class="file-input" (change)="onFileSelected($event)">
+    <div class="notes-actions">
+        <button class="upload-button" type="button" (click)="onUploadClick(fileInput)" [disabled]="uploading">
+            {{ uploading ? 'Uploading...' : 'Add Notes' }}
+        </button>
+        <input class="search-bar" type="text" placeholder="Search..">
+    </div>
+    <input #fileInput type="file" class="file-input" (change)="onFileSelected($event)" hidden>
     <div *ngIf="message" class="upload-message">{{ message }}</div>
-    <input class="search-bar" type="text" placeholder="Search..">
+
+    <br>
+    <app-notes-list></app-notes-list>
 </div>

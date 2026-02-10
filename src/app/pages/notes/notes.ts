@@ -2,10 +2,11 @@ import { ChangeDetectorRef, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { finalize } from 'rxjs/operators';
+import { NotesList } from '../../widgets/notes-list/notes-list';
 
 @Component({
   selector: 'app-notes',
-  imports: [CommonModule],
+  imports: [CommonModule, NotesList],
   templateUrl: './notes.html',
   styleUrl: './notes.css',
 })
@@ -42,8 +43,9 @@ export class Notes {
           this.message = 'File uploaded successfully';
           this.cdr.detectChanges();
         },
-        error: () => {
-          this.message = 'Upload failed';
+        error: (err) => {
+          const serverMessage = typeof err?.error === 'string' ? err.error : err?.error?.message;
+          this.message = serverMessage || err?.message || 'Upload failed';
           this.cdr.detectChanges();
         },
       });

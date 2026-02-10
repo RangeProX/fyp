@@ -11,10 +11,16 @@
     font-size: 16px;
     border: 2px solid #ddd;
     border-radius: 5px;
-    width: 60%;
-    margin-top: 20px;
+    width: 40%;
     margin-left: auto;
     margin-right: 0;
+}
+
+.notes-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 20px;
 }
 
 .upload-button {

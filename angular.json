@@ -59,10 +59,12 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "fyp:build:production"
+              "buildTarget": "fyp:build:production",
+              "proxyConfig": "proxy.conf.json"
             },
             "development": {
-              "buildTarget": "fyp:build:development"
+              "buildTarget": "fyp:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

@@ -51,15 +51,13 @@ const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
     if (!allowedMimeTypes.has(file.mimetype)) {
-      const err = new Error('Unsupported file type');
-      err.status = 400;
-      return cb(err);
+      req.fileValidationError = 'Unsupported file type';
+      return cb(null, false);
     }
     const ext = path.extname(file.originalname).toLowerCase();
     if (!allowedExtension.has(ext)) {
-      const err = new Error('Unsupported file type');
-      err.status = 400;
-      return cb(err);
+      req.fileValidationError = 'Unsupported file type';
+      return cb(null, false);
     }
     
     return cb(null, true);
@@ -75,7 +73,10 @@ router.post('/upload', authMiddleware, (req, res, next) => {
       if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ message: 'File too large (max 10MB)' });
       }
-      return res.status(err.status || 400).json({ message: err.message || 'Invalid upload' });
+      return res.status(400).json({ message: 'Invalid upload' });
+    }
+    if (req.fileValidationError) {
+      return res.status(400).json({ message: req.fileValidationError });
     }
     return next();
   });
