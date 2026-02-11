@@ -18,7 +18,7 @@ export const uploadFile = async (req, res) => {
 
   const relativePath = path.relative(backendRoot, file.path);
 
-  // create row for file and persmission
+  // create row for file and persmission, if one fails, file doesnt upload.
   try {
     await prisma.$transaction([
       prisma.file.create({
@@ -57,17 +57,22 @@ export const listFiles = async (req, res) => {
   const userId = req.user?.id;
   // check if user is logged in
   if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: 'Unauthorized, you are not logged in.' });
   }
 
   // display all files user has access to
   try {
+    const user = await prisma.userAuth.findUnique({ where: { id: userId } });
+    const isAdmin = user?.username === 'admin'; // admin bypass
+
     const rows = await prisma.file.findMany({
-      where: {
-        permissions: {
-          some: { userId },
+      where: isAdmin
+        ? {}
+        : {
+          permissions: {
+            some: { userId },
+          },
         },
-      },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -76,6 +81,11 @@ export const listFiles = async (req, res) => {
         size: true,
         createdAt: true,
         ownerId: true,
+        owner: {
+          select: {
+            username: true,
+          },
+        },
       },
     });
 
@@ -90,7 +100,7 @@ export const downloadFile = async (req, res) => {
   const fileId = req.params.id;
 
   if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: 'You are not logged in.' });
   }
 
   try {
@@ -120,14 +130,50 @@ export const downloadFile = async (req, res) => {
   }
 };
 
+export const previewFile = async (req, res) => {
+  const userId = req.user?.id;
+  const fileId = req.params.id;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'You are not logged in.' });
+  }
+
+  try {
+    const access = await prisma.filePermission.findUnique({
+      where: {
+        fileId_userId: { fileId, userId },
+      },
+    });
+
+    if (!access) {
+      return res.status(403).json({ message: 'You have no access to this file.' });
+    }
+
+    const file = await prisma.file.findUnique({ where: { id: fileId } });
+    if (!file) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    const absolutePath = path.join(backendRoot, file.storagePath);
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${file.originalName}"`);
+    res.sendFile(absolutePath);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to preview file' });
+  }
+};
+
 export const shareFile = async (req, res) => {
   const userId = req.user?.id;
   const fileId = req.params.id;
-  const { username, role } = req.body || {};
-  const resolvedRole = role || 'viewer';
+  const { username } = req.body || {};
 
   if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: 'You are not logged in.' });
   }
   if (!username) {
     return res.status(400).json({ message: 'Username required' });
@@ -153,11 +199,11 @@ export const shareFile = async (req, res) => {
       where: {
         fileId_userId: { fileId, userId: user.id },
       },
-      update: { role: resolvedRole },
+      update: { role: 'viewer' },
       create: {
         fileId,
         userId: user.id,
-        role: resolvedRole,
+        role: 'viewer',
       },
     });
 
@@ -172,17 +218,20 @@ export const deleteFile = async (req, res) => {
   const fileId = req.params.id;
 
   if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ message: 'You are not logged in.' });
   }
 
   try {
+    const user = await prisma.userAuth.findUnique({ where: { id: userId } });
+    const isAdmin = user?.username === 'admin';
+
     const access = await prisma.filePermission.findUnique({
       where: {
         fileId_userId: { fileId, userId },
       },
     });
 
-    if (!access || access.role !== 'owner') {
+    if (!isAdmin && (!access || access.role !== 'owner')) {
       return res.status(403).json({ message: 'Only the owner can delete this file.' });
     }
 

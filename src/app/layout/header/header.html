@@ -1,4 +1,9 @@
 <header class="header-bar">
   <h1 class="app-title">Final Year Project</h1>
-  <button class="logout-button" (click)="logout()">Logout</button>
+  <div class="user-actions">
+    <div class="user-details">
+      Logged in as {{ username }}
+    </div>
+    <button class="logout-button" (click)="logout()">Logout</button>
+  </div>
 </header>

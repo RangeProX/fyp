@@ -19,6 +19,12 @@
     font-size: 36px;
 }
 
+.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .logout-button {
     padding: 8px 16px;
     background-color: #007bff;
@@ -30,4 +36,9 @@
 
 .logout-button:hover {
     background-color: #0056b3;
+}
+
+.user-details {
+    font-size: 16px;
+    color: #0f172a;
 }

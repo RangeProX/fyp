@@ -2,9 +2,6 @@
   <div class="notes-list-wrapper">
     <div class="list-header">
       <h2>Your Notes</h2>
-      <button class="refresh-btn" (click)="loadFiles()" [disabled]="loading">
-        {{ loading ? 'Loading...' : 'Refresh' }}
-      </button>
     </div>
 
     <div *ngIf="loading" class="state-message">Loading files...</div>
@@ -12,7 +9,7 @@
     <div *ngIf="error && !loading" class="state-message error">{{ error }}</div>
     
     <div *ngIf="!loading && !error && files.length === 0" class="state-message empty">
-      No files uploaded yet. Upload your first note above.
+      No files uploaded yet.
     </div>
 
     <div *ngIf="!loading && !error && files.length > 0" class="files-table">
@@ -20,20 +17,60 @@
         <div class="col-name">File Name</div>
         <div class="col-type">Type</div>
         <div class="col-size">Size</div>
-        <div class="col-date">Date</div>
+        <div class="col-date">Date Created</div>
+        <div class="col-owner">Owner</div>
         <div class="col-actions">Actions</div>
       </div>
       <div *ngFor="let file of files" class="table-row">
-        <div class="col-name">{{ file.originalName }}</div>
-        <div class="col-type">{{ file.mimeType }}</div>
+        <div class="col-name">
+          <button class="file-link" type="button" (click)="previewFile(file)" title="Preview file">
+            {{ file.originalName }}
+          </button>
+        </div>
+        <div class="col-type">{{ getFileExtension(file) }}</div>
         <div class="col-size">{{ formatFileSize(file.size) }}</div>
         <div class="col-date">{{ formatDate(file.createdAt) }}</div>
+        <div class="col-owner">{{ file.owner?.username || 'Unknown' }}</div>
         <div class="col-actions">
           <button class="delete-btn" (click)="deleteFile(file.id)" title="Delete file">
             Delete
           </button>
+          <button class="share-btn" (click)="openShareModal(file.id)" title="Share file">
+            Share
+          </button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="shareModalOpen" (click)="closeShareModal()"></div>
+<div class="modal" *ngIf="shareModalOpen" (click)="closeShareModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Share File</h3>
+      <button class="modal-close" type="button" (click)="closeShareModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <label class="modal-label" for="share-username">Username</label>
+      <input
+        id="share-username"
+        class="modal-input"
+        type="text"
+        [(ngModel)]="shareUsername"
+        placeholder="Enter username"
+        [disabled]="shareSubmitting"
+      >
+
+      <div *ngIf="shareError" class="modal-error">{{ shareError }}</div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" type="button" (click)="closeShareModal()" [disabled]="shareSubmitting">
+        Cancel
+      </button>
+      <button class="modal-submit" type="button" (click)="submitShare()" [disabled]="shareSubmitting">
+        {{ shareSubmitting ? 'Sharing...' : 'Share' }}
+      </button>
     </div>
   </div>
 </div>
