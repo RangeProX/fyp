@@ -2,6 +2,21 @@
   <div class="notes-list-wrapper">
     <div class="list-header">
       <h2>Your Notes</h2>
+      <div class="ai-actions">
+        <span class="selection-count">Selected: {{ selectedFileIds.size }}</span>
+        <button class="ai-btn" type="button" (click)="runAiAction('questions')" [disabled]="selectedFileIds.size === 0">
+          Generate Questions
+        </button>
+        <button class="ai-btn" type="button" (click)="runAiAction('flashcards')" [disabled]="selectedFileIds.size === 0">
+          Generate Flashcards
+        </button>
+        <button class="ai-btn" type="button" (click)="runAiAction('summarize')" [disabled]="selectedFileIds.size === 0">
+          Summarize
+        </button>
+        <button class="ai-btn secondary" type="button" (click)="clearSelection()" [disabled]="selectedFileIds.size === 0">
+          Clear
+        </button>
+      </div>
     </div>
 
     <div *ngIf="loading" class="state-message">Loading files...</div>
@@ -19,11 +34,11 @@
         <div class="col-size">Size</div>
         <div class="col-date">Date Created</div>
         <div class="col-owner">Owner</div>
-        <div class="col-actions">Actions</div>
+        <div class="col-select">Select</div>
       </div>
-      <div *ngFor="let file of files" class="table-row">
+      <div *ngFor="let file of files" class="table-row" [class.selected]="isSelected(file.id)" (click)="toggleSelectFile(file.id)">
         <div class="col-name">
-          <button class="file-link" type="button" (click)="previewFile(file)" title="Preview file">
+          <button class="file-link" type="button" (click)="previewFile(file); $event.stopPropagation()" title="Preview file">
             {{ file.originalName }}
           </button>
         </div>
@@ -31,13 +46,14 @@
         <div class="col-size">{{ formatFileSize(file.size) }}</div>
         <div class="col-date">{{ formatDate(file.createdAt) }}</div>
         <div class="col-owner">{{ file.owner?.username || 'Unknown' }}</div>
-        <div class="col-actions">
-          <button class="delete-btn" (click)="deleteFile(file.id)" title="Delete file">
-            Delete
-          </button>
-          <button class="share-btn" (click)="openShareModal(file.id)" title="Share file">
-            Share
-          </button>
+        <div class="col-select">
+          <input
+            type="checkbox"
+            [checked]="isSelected(file.id)"
+            (change)="toggleSelectFile(file.id)"
+            (click)="$event.stopPropagation()"
+            aria-label="Select file"
+          >
         </div>
       </div>
     </div>

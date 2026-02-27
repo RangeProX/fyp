@@ -2,3 +2,129 @@ full-calendar {
   display: block;
   height: 100%;
 }
+
+.container {
+  position: relative;
+  min-height: 100%;
+}
+
+.calendar-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 18, 25, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: #ffffff;
+  color: #0f1219;
+  width: min(420px, 100%);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(15, 18, 25, 0.2);
+  padding: 20px 22px 18px;
+}
+
+.modal-title {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.modal-body {
+  display: grid;
+  gap: 12px;
+}
+
+.modal-field {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: #444c5e;
+}
+
+.modal-field input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d5dbe7;
+  font-size: 14px;
+  color: #0f1219;
+}
+
+.modal-field textarea {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d5dbe7;
+  font-size: 14px;
+  color: #0f1219;
+  min-height: 92px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.modal-field input:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+  border-color: #3b82f6;
+}
+
+.modal-field textarea:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+  border-color: #3b82f6;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.modal-error {
+  margin: 10px 0 0;
+  color: #b42318;
+  font-size: 13px;
+}
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.btn.primary:disabled {
+  background: #9db7f7;
+  cursor: not-allowed;
+}
+
+.btn.ghost {
+  background: #eef2f7;
+  color: #1f2937;
+}
+
+.btn.danger {
+  background: #b42318;
+  color: #ffffff;
+}
+
+.btn.danger:disabled {
+  background: #e2a6a1;
+  cursor: not-allowed;
+}

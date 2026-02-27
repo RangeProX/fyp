@@ -60,4 +60,39 @@ export class Notes {
       });
   }
 
+  deleteSelectedFiles() {
+    if (!this.notesList) {
+      return;
+    }
+
+    const ids = this.notesList.getSelectedIds();
+    if (ids.length === 0) {
+      return;
+    }
+
+    if (!confirm(`Delete ${ids.length} selected file(s)?`)) {
+      return;
+    }
+
+    this.notesList.deleteFiles(ids);
+  }
+
+  shareSelectedFiles() {
+    if (!this.notesList) {
+      return;
+    }
+
+    const ids = this.notesList.getSelectedIds();
+    if (ids.length === 0) {
+      return;
+    }
+
+    if (ids.length > 1) {
+      alert('Please select a single file to share.');
+      return;
+    }
+
+    this.notesList.openShareModal(ids[0]);
+  }
+
 }

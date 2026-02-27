@@ -15,8 +15,17 @@ model UserAuth {
   createdAt   DateTime?        @default(now()) @map("created_at")
   files       File[]           @relation("UserFiles")
   permissions FilePermission[] @relation("UserPermissions")
+  events      Event[]
+  eventPermissions EventPermission[] @relation("UserEventPermissions")
+  sessions    Session[]
 
   @@map("users_auth")
+}
+
+enum EventVisibility {
+  PRIVATE
+  SHARED
+  PUBLIC
 }
 
 model File {
@@ -29,6 +38,9 @@ model File {
   createdAt    DateTime?        @default(now()) @map("created_at")
   owner        UserAuth         @relation("UserFiles", fields: [ownerId], references: [id])
   permissions  FilePermission[]
+  processingStatus String @default("pending") @map("processing_status")
+  extractedText String? @map("extracted_text")
+  processingError String? @map("processing_error")
 
   @@map("files")
 }
@@ -45,6 +57,36 @@ model FilePermission {
   @@map("file_permissions")
 }
 
+model Event {
+  id         String           @id @default(cuid())
+  title      String
+  startTime  DateTime         @map("start_time")
+  endTime    DateTime         @map("end_time")
+  notes      String?          @map("notes")
+  visibility EventVisibility  @default(PRIVATE)
+  ownerId    Int              @map("owner_id")
+  createdAt  DateTime?        @default(now()) @map("created_at")
+  updatedAt  DateTime?        @updatedAt @map("updated_at")
+
+  owner       UserAuth          @relation(fields: [ownerId], references: [id])
+  permissions EventPermission[]
+
+  @@map("events")
+}
+
+model EventPermission {
+  eventId   String    @map("event_id")
+  userId    Int       @map("user_id")
+  role      String
+  createdAt DateTime? @default(now()) @map("created_at")
+
+  event Event    @relation(fields: [eventId], references: [id])
+  user  UserAuth @relation("UserEventPermissions", fields: [userId], references: [id])
+
+  @@id([eventId, userId])
+  @@map("event_permissions")
+}
+
 model users_old {
   id         Int       @id @default(autoincrement())
   email      String    @unique(map: "sqlite_autoindex_users_old_1")
@@ -52,4 +94,22 @@ model users_old {
   created_at DateTime? @default(now())
 
   @@ignore
+}
+
+model Session {
+  sessionId       Int       @id @default(autoincrement()) @map("session_id")
+  userId          Int       @map("user_id")
+  sessionTitle    String    @map("session_title")
+  durationSeconds Int       @map("duration_seconds")
+  focusLevel      Int       @map("focus_level")
+  goals           String?
+  remarks         String?
+  progress        String?
+  pausedCount     Int       @default(0) @map("paused_count")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  user UserAuth @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("sessions")
 }

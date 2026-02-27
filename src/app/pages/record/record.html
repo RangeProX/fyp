@@ -4,16 +4,62 @@
         <label for="subject">Subject:</label>
         <input type="text" id="subject" name="subject" [(ngModel)]="subject">
         <br>
+        <label for="goals">Goals:</label>
+        <textarea type="text" id="goals" name="goals" [(ngModel)]="goals"></textarea>
         <br>
         <label for="remarks">Remarks (optional):</label>
-        <textarea id="remarks" name="remarks"></textarea>
+        <textarea id="remarks" name="remarks" [(ngModel)]="remarks"></textarea>
         <br>
         <button type="submit">Start Session</button>
     </form>
 
     <div *ngIf="isSessionActive" class="session-active">
         <h2>{{ subject }}</h2>
+        <p><strong>Goals:</strong> {{ goals }}</p>
         <div class="timer">{{ formatTime(elapsedSeconds) }}</div>
-        <button type="button" (click)="stopSession()" class="stop-button">Stop Session</button>
+        
+        <button type="button" (click)="isPaused ? resumeSession() : pauseSession()" class="pause-button">
+            {{ isPaused ? 'Resume Session' : 'Pause Session' }}
+        </button>
+        <button type="button" (click)="stopSession()" class="stop-button">End Session</button>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="isEndSessionModalOpen" (click)="closeEndSessionModal()">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-label="Session details" (click)="$event.stopPropagation()">
+            <h2>Session completed</h2>
+            <p><strong>Subject:</strong> {{ subject }}</p>
+            <p><strong>Duration:</strong> {{ completedDuration }}</p>
+
+            <form (ngSubmit)="submitSessionDetails()" class="end-session-form">
+                <label for="focusLevel">How focused were you during this session?</label>
+                <div class="slider-wrapper">
+                    <div class="slider-value">Focus Level: {{ focusLevel }}</div>
+                    <input
+                        class="focus-slider"
+                        type="range"
+                        min="1"
+                        max="5"
+                        step="1"
+                        id="focusLevel"
+                        name="focusLevel"
+                        [(ngModel)]="focusLevel"
+                    >
+                    
+                </div>
+                <div class="progress-wrapper">
+                    <label for="progress">Progress</label>
+                    <br>
+                    <textarea 
+                        class="progress"
+                        name="progress"
+                        [(ngModel)]="progress"
+                        placeholder="What did you accomplish this session?"
+                        ></textarea>
+                </div>
+                <div class="endSessionButton">
+                    <button type="submit" class="btn primary">Submit session details</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>

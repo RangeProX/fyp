@@ -11,19 +11,28 @@ import { FormsModule } from '@angular/forms';
 })
 export class Record implements OnDestroy {
   subject = '';
+  goals = '';
+  remarks = '';
   isSessionActive = false;
+  isPaused = false;
   elapsedSeconds = 0;
+  isEndSessionModalOpen = false;
+  completedDuration = '';
+  focusLevel = 0;
+  progress = '';
+  pausedCount = 0;
   private timerInterval: any;
 
   constructor(private cdr: ChangeDetectorRef) {}
 
   startSession() {
-    if (!this.subject.trim()) {
-      alert('Please enter a subject');
+    if (!this.subject.trim() || !this.goals.trim()) {
+      alert('Please enter a subject and goals');
       return;
     }
 
     this.isSessionActive = true;
+    this.isPaused = false;
     this.elapsedSeconds = 0;
 
     this.timerInterval = setInterval(() => {
@@ -32,12 +41,55 @@ export class Record implements OnDestroy {
     }, 1000);
   }
 
+  pauseSession() {
+    if (!this.isSessionActive || !this.timerInterval) {
+      return;
+    }
+
+    clearInterval(this.timerInterval);
+    this.timerInterval = null;
+    this.isPaused = true;
+    this.pausedCount++;
+    this.cdr.markForCheck();
+  }
+
+  resumeSession() {
+    if (!this.isSessionActive || !this.isPaused || this.timerInterval) {
+      return;
+    }
+
+    this.timerInterval = setInterval(() => {
+      this.elapsedSeconds++;
+      this.cdr.markForCheck();
+    }, 1000);
+    this.isPaused = false;
+    this.cdr.markForCheck();
+  }
+
   stopSession() {
     this.isSessionActive = false;
+    this.isPaused = false;
     clearInterval(this.timerInterval);
-    alert(`Session completed! Total time: ${this.formatTime(this.elapsedSeconds)}`);
+    this.timerInterval = null;
+    this.completedDuration = this.formatTime(this.elapsedSeconds);
+    this.isEndSessionModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  submitSessionDetails() {
+    this.closeEndSessionModal();
+  }
+
+  closeEndSessionModal() {
+    this.isEndSessionModalOpen = false;
     this.subject = '';
+    this.goals = '';
+    this.remarks = '';
     this.elapsedSeconds = 0;
+    this.completedDuration = '';
+    this.focusLevel = 0;
+    this.progress = '';
+    this.cdr.markForCheck();
   }
 
   formatTime(seconds: number): string {

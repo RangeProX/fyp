@@ -1,3 +1,52 @@
 <div class="container">
-<full-calendar [options]="calendarOptions"></full-calendar>
+	<div class="calendar-toolbar">
+		<button type="button" class="btn primary" (click)="openModal()">Add event</button>
+	</div>
+
+	<full-calendar [options]="calendarOptions"></full-calendar>
+
+	<div class="modal-backdrop" *ngIf="isModalOpen" (click)="closeModal()">
+		<div class="modal-card" role="dialog" aria-modal="true" aria-label="Add event" (click)="$event.stopPropagation()">
+			<h2 class="modal-title">{{ isDetailsMode ? 'Event details' : 'Add event' }}</h2>
+			<div class="modal-body">
+				<label class="modal-field">
+					<span>Title</span>
+					<input type="text" [(ngModel)]="draftTitle" (ngModelChange)="validateDraft()" placeholder="Title" [readonly]="isDetailsMode" />
+				</label>
+				<label class="modal-field">
+					<span>Start</span>
+					<input type="datetime-local" [(ngModel)]="draftStart" (ngModelChange)="validateDraft()" [disabled]="isDetailsMode" />
+				</label>
+				<label class="modal-field">
+					<span>End</span>
+					<input type="datetime-local" [(ngModel)]="draftEnd" (ngModelChange)="validateDraft()" [disabled]="isDetailsMode" />
+				</label>
+				<label class="modal-field">
+					<span>Notes</span>
+					<textarea [(ngModel)]="draftNotes" (ngModelChange)="validateDraft()" placeholder="Additional notes" [readonly]="isDetailsMode"></textarea>
+				</label>
+			</div>
+			<p class="modal-error" *ngIf="message">{{ message }}</p>
+			<div class="modal-actions">
+				<button
+					*ngIf="isDetailsMode"
+					type="button"
+					class="btn danger"
+					(click)="deleteSelectedEvent()"
+					[disabled]="isDeleting"
+				>
+					{{ isDeleting ? 'Deleting...' : 'Delete' }}
+				</button>
+				<button type="button" class="btn ghost" (click)="closeModal()">{{ isDetailsMode ? 'Close' : 'Cancel' }}</button>
+				<button
+					*ngIf="!isDetailsMode"
+					type="button"
+					class="btn primary"
+					(click)="saveEvent()"
+				>
+					Save event
+				</button>
+			</div>
+		</div>
+	</div>
 </div>

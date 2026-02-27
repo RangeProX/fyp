@@ -45,3 +45,6 @@ Thumbs.db
 # Backend runtime data
 /backend/users.db
 /backend/data/*.db
+
+# Uploaded files
+/backend/uploads/*

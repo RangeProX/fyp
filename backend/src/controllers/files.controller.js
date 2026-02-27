@@ -1,7 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 import prisma from '../config/prisma.js';
+
+const require = createRequire(import.meta.url);
+const pdfParse = require('pdf-parse');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -163,6 +167,7 @@ export const previewFile = async (req, res) => {
     res.setHeader('Content-Disposition', `inline; filename="${file.originalName}"`);
     res.sendFile(absolutePath);
   } catch (err) {
+    console.error('Preview file error:', err);
     res.status(500).json({ message: 'Failed to preview file' });
   }
 };
@@ -187,7 +192,7 @@ export const shareFile = async (req, res) => {
     });
 
     if (!access || access.role !== 'owner') {
-      return res.status(403).json({ message: 'You have no access to this file.' });
+      return res.status(403).json({ message: 'Only the owner can share this file.' });
     }
 
     const user = await prisma.userAuth.findUnique({ where: { username } });
@@ -258,3 +263,87 @@ export const deleteFile = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete file' });
   }
 };
+
+// TODO: data extraction from file
+export const extractData = async (req, res) => {
+  const userId = req.user?.id;
+  const fileId = req.params.id;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Session expired. Please log in again.' });
+  }
+
+  try {
+    const access = await prisma.filePermission.findUnique({
+      where: {
+        fileId_userId: { fileId, userId },
+      },
+    });
+
+    if (!access) {
+      return res.status(403).json({ message: 'You have no access to this file.' });
+    }
+
+    const file = await prisma.file.findUnique({ where: { id: fileId } });
+    if (!file) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    if (file.mimeType !== 'application/pdf') {
+      return res.status(400).json({ message: 'Only PDF extraction is supported right now.' });
+    }
+
+    const absolutePath = path.join(backendRoot, file.storagePath);
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    await prisma.file.update({
+      where: { id: fileId },
+      data: { processingStatus: 'processing', processingError: null },
+    });
+
+    const buffer = await fs.promises.readFile(absolutePath);
+    const result = await pdfParse(buffer);
+    const text = result?.text || '';
+
+    await prisma.file.update({
+      where: { id: fileId },
+      data: { extractedText: text },
+    });
+
+    res.json({ message: 'Extraction complete', text });
+  } catch (err) {
+    await prisma.file.update({
+      where: { id: fileId },
+      data: { processingStatus: 'failed', processingError: 'Extraction failed' },
+    }).catch(() => {});
+    res.status(500).json({ message: 'Failed to extract data' });
+  }
+};
+
+// TODO: summarization using AI
+export const summarizeFile = async (req, res) => {
+  const userId = req.user?.id;
+  const fileId = req.params.id;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Session expired. Please log in again.' });
+  }
+  
+  try {
+    const access = await prisma.filePermission.findUnique({
+      where: {
+        fileId_userId: { fileId, userId },
+      },
+    });
+
+    if (!access) {
+      return res.status(403).json({ message: 'You have no access to this file.' });
+    }
+
+    res.json({ message: 'Feature coming soon' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to summarize file' });
+  }
+}

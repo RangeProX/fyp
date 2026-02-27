@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
 
 interface FileItem {
   id: string;
@@ -25,6 +26,7 @@ export class NotesList implements OnInit {
   files: FileItem[] = [];
   loading = true;
   error = '';
+  selectedFileIds = new Set<string>();
   shareModalOpen = false;
   shareTargetId = '';
   shareUsername = '';
@@ -90,6 +92,7 @@ export class NotesList implements OnInit {
       .subscribe({
         next: () => {
           this.loadFiles();
+          this.selectedFileIds.delete(fileId);
           this.cdr.detectChanges();
         },
         error: (err) => {
@@ -99,6 +102,62 @@ export class NotesList implements OnInit {
           this.cdr.detectChanges();
         },
       });
+  }
+
+  deleteFiles(fileIds: string[]) {
+    if (fileIds.length === 0) {
+      return;
+    }
+
+    const requests = fileIds.map((id) => this.http.delete(`/api/files/${id}`));
+    forkJoin(requests).subscribe({
+      next: () => {
+        fileIds.forEach((id) => this.selectedFileIds.delete(id));
+        this.loadFiles();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Bulk delete error:', err);
+        const message = err?.error?.message || err?.statusText || 'Unknown error';
+        alert('Failed to delete files: ' + message);
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  toggleSelectFile(fileId: string) {
+    if (this.selectedFileIds.has(fileId)) {
+      this.selectedFileIds.delete(fileId);
+    } else {
+      this.selectedFileIds.add(fileId);
+    }
+    this.cdr.detectChanges();
+  }
+
+  isSelected(fileId: string) {
+    return this.selectedFileIds.has(fileId);
+  }
+
+  getSelectedIds() {
+    return Array.from(this.selectedFileIds);
+  }
+
+  getSelectedCount() {
+    return this.selectedFileIds.size;
+  }
+
+  clearSelection() {
+    this.selectedFileIds.clear();
+    this.cdr.detectChanges();
+  }
+
+  runAiAction(action: 'questions' | 'flashcards' | 'summarize') {
+    if (this.selectedFileIds.size === 0) {
+      return;
+    }
+
+    const ids = Array.from(this.selectedFileIds);
+    alert(`Coming soon: ${action} for ${ids.length} file(s).`);
   }
 
   openShareModal(fileId: string) {

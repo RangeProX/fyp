@@ -7,6 +7,12 @@
         <button class="upload-button" type="button" (click)="triggerFileInput()" [disabled]="uploading">
             {{ uploading ? 'Uploading...' : 'Add Notes' }}
         </button>
+        <button class="bulk-button" type="button" (click)="deleteSelectedFiles()">
+            Delete Selected
+        </button>
+        <button class="bulk-button" type="button" (click)="shareSelectedFiles()">
+            Share Selected
+        </button>
         <input class="search-bar" type="text" placeholder="Search..">
     </div>
     <input #fileInput type="file" class="file-input" accept=".pdf,.png,.jpg,.jpeg,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx" (change)="onFileSelected($event)">

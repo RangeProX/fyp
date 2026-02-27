@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth.routes.js';
 import filesRoutes from './routes/files.routes.js';
+import eventsRoutes from './routes/events.routes.js';
 import prisma from './config/prisma.js';
 
 const app = express();
@@ -32,6 +33,7 @@ app.get('/api/users', async (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/files', filesRoutes);
+app.use('/api/events', eventsRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ message: 'Backend is running' });
