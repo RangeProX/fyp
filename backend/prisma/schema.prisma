@@ -10,7 +10,7 @@ datasource db {
 
 model UserAuth {
   id          Int              @id @default(autoincrement())
-  username    String           @unique
+  username    String           @unique(map: "sqlite_autoindex_users_auth_1")
   password    String
   createdAt   DateTime?        @default(now()) @map("created_at")
   files       File[]           @relation("UserFiles")
@@ -71,6 +71,7 @@ model Event {
   owner       UserAuth          @relation(fields: [ownerId], references: [id])
   permissions EventPermission[]
 
+  @@index([ownerId])
   @@map("events")
 }
 
@@ -84,6 +85,7 @@ model EventPermission {
   user  UserAuth @relation("UserEventPermissions", fields: [userId], references: [id])
 
   @@id([eventId, userId])
+  @@index([userId])
   @@map("event_permissions")
 }
 

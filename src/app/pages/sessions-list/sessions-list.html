@@ -1,0 +1,38 @@
+<section class="sessions-list">
+  <div class="actions">
+    <button type="button" routerLink="/record">Record Session</button>
+  </div>
+
+  <p *ngIf="isLoading">Loading sessions...</p>
+  <p *ngIf="error">{{ error }}</p>
+  <p *ngIf="!isLoading && !error && sessions.length === 0">No saved sessions yet.</p>
+
+  <ul *ngIf="!isLoading && !error && sessions.length > 0">
+    <li *ngFor="let s of sessions">
+        <div class="session-container" (click)="viewSessionDetails(s.sessionId)">
+      <div class="session-header">
+        <h3>{{ s.sessionTitle }}</h3>
+      </div>
+      <p><strong>Goals:</strong> {{ s.goals || '-' }}</p>
+      <p><strong>Saved:</strong> {{ s.createdAt | date:'medium' }}</p>
+      </div>
+    </li>
+  </ul>
+
+  <div class="modal-backdrop" *ngIf="selectedSession" (click)="closeSessionDetails()">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Session details" (click)="$event.stopPropagation()">
+      <h3>{{ selectedSession.sessionTitle }}</h3>
+      <p><strong>Goals:</strong> {{ selectedSession.goals || '-' }}</p>
+      <p><strong>Remarks:</strong> {{ selectedSession.remarks || '-' }}</p>
+      <p><strong>Duration:</strong> {{ formatDuration(selectedSession.durationSeconds) }}</p>
+      <p><strong>Focus Level:</strong> {{ selectedSession.focusLevel }}/5</p>
+      <p><strong>Progress:</strong> {{ selectedSession.progress || '-' }}</p>
+      <p><strong>Paused:</strong> {{ selectedSession.pausedCount }} times</p>
+      <p><strong>Saved:</strong> {{ selectedSession.createdAt | date:'medium' }}</p>
+      <div class="modal-actions">
+        <button type="button" class="delete-button" (click)="deleteSession(selectedSession.sessionId)">Delete</button>
+        <button type="button" class="close-button" (click)="closeSessionDetails()">Close</button>
+      </div>
+    </div>
+  </div>
+</section>

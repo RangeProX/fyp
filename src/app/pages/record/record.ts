@@ -1,6 +1,7 @@
 import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-record',
@@ -18,12 +19,20 @@ export class Record implements OnDestroy {
   elapsedSeconds = 0;
   isEndSessionModalOpen = false;
   completedDuration = '';
-  focusLevel = 0;
+  focusLevel = 1;
   progress = '';
   pausedCount = 0;
-  private timerInterval: any;
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  isSubmitting = false;
+  submitError = '';
+
+  private timerInterval: any;
+  private readonly apiUrl = '/api/sessions';
+
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private http: HttpClient
+  ) {}
 
   startSession() {
     if (!this.subject.trim() || !this.goals.trim()) {
@@ -42,9 +51,7 @@ export class Record implements OnDestroy {
   }
 
   pauseSession() {
-    if (!this.isSessionActive || !this.timerInterval) {
-      return;
-    }
+    if (!this.isSessionActive || !this.timerInterval) return;
 
     clearInterval(this.timerInterval);
     this.timerInterval = null;
@@ -54,14 +61,13 @@ export class Record implements OnDestroy {
   }
 
   resumeSession() {
-    if (!this.isSessionActive || !this.isPaused || this.timerInterval) {
-      return;
-    }
+    if (!this.isSessionActive || !this.isPaused || this.timerInterval) return;
 
     this.timerInterval = setInterval(() => {
       this.elapsedSeconds++;
       this.cdr.markForCheck();
     }, 1000);
+
     this.isPaused = false;
     this.cdr.markForCheck();
   }
@@ -77,18 +83,51 @@ export class Record implements OnDestroy {
   }
 
   submitSessionDetails() {
-    this.closeEndSessionModal();
+    const payload = {
+      sessionTitle: this.subject,
+      durationSeconds: this.elapsedSeconds,
+      focusLevel: this.focusLevel,
+      goals: this.goals,
+      remarks: this.remarks,
+      progress: this.progress,
+      pausedCount: this.pausedCount,
+    };
+
+    this.isSubmitting = true;
+    this.submitError = '';
+    this.cdr.markForCheck();
+
+    this.http.post(this.apiUrl, payload).subscribe({
+      next: () => {
+        this.isSubmitting = false;
+
+        this.closeEndSessionModal(); // close only
+        this.resetSessionData();     // reset only after successful POST
+        alert('Session saved successfully!');
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.isSubmitting = false;
+        this.submitError = 'Failed to save session. Please try again.';
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   closeEndSessionModal() {
     this.isEndSessionModalOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  private resetSessionData() {
     this.subject = '';
     this.goals = '';
     this.remarks = '';
     this.elapsedSeconds = 0;
     this.completedDuration = '';
-    this.focusLevel = 0;
+    this.focusLevel = 1;
     this.progress = '';
+    this.pausedCount = 0;
     this.cdr.markForCheck();
   }
 
@@ -101,8 +140,6 @@ export class Record implements OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-    }
+    if (this.timerInterval) clearInterval(this.timerInterval);
   }
 }

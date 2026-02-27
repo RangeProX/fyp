@@ -1,0 +1,145 @@
+.sessions-list {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.actions {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
+.actions button {
+	padding: 8px 14px;
+	border: none;
+	border-radius: 6px;
+	font-size: 14px;
+	cursor: pointer;
+	color: #fff;
+	background-color: #60a5fa;
+}
+
+.actions button:hover {
+	background-color: #3b82f6;
+}
+
+.sessions-list > p {
+	margin: 0;
+	padding: 14px 16px;
+	border-radius: 8px;
+	background: #f5f7fb;
+	color: #374151;
+}
+
+.sessions-list > p:nth-of-type(2) {
+	background: #ffebee;
+	color: #b42318;
+}
+
+.sessions-list ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 12px;
+}
+
+.sessions-list li {
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+	background: #ffffff;
+	padding: 16px;
+	display: grid;
+	gap: 8px;
+}
+
+.session-container {
+	cursor: pointer;
+}
+
+.sessions-list h3 {
+	margin: 0;
+	font-size: 20px;
+	color: #111827;
+}
+
+.session-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+}
+
+.delete-button {
+	padding: 6px 12px;
+	border: none;
+	border-radius: 6px;
+	background: #ef4444;
+	color: #fff;
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.delete-button:hover {
+	background: #dc2626;
+}
+
+.sessions-list li p {
+	margin: 0;
+	color: #4b5563;
+}
+
+.sessions-list li strong {
+	color: #1f2937;
+}
+
+.modal-backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(15, 23, 42, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	z-index: 1000;
+}
+
+.modal-card {
+	width: min(520px, 100%);
+	background: #fff;
+	border-radius: 12px;
+	padding: 20px;
+	box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+	display: grid;
+	gap: 8px;
+}
+
+.modal-card h3 {
+	margin: 0 0 6px;
+}
+
+.modal-card p {
+	margin: 0;
+	color: #4b5563;
+}
+
+.modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 10px;
+}
+
+.close-button {
+	padding: 8px 14px;
+	border: none;
+	border-radius: 6px;
+	background: #e5e7eb;
+	color: #111827;
+	cursor: pointer;
+}
+
+.close-button:hover {
+	background: #d1d5db;
+}

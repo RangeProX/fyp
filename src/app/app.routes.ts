@@ -8,6 +8,7 @@ import { RegisterComponent } from './pages/register/register';
 import { Calendar } from './pages/calendar/calendar';
 import { Record } from './pages/record/record';
 import { Notes } from './pages/notes/notes';
+import { SessionsList } from './pages/sessions-list/sessions-list';
 
 export const routes: Routes = [
   //not logged in
@@ -23,6 +24,7 @@ export const routes: Routes = [
     children: [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'calendar', component: Calendar },
+      { path: 'sessions-list', component: SessionsList },
       { path: 'record', component: Record },
       { path: 'notes', component: Notes },
     ],
