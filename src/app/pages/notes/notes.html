@@ -1,23 +1,189 @@
 <div class="container">
-    <div class="title">
-    Notes
-    </div>
-    <br>
+    <div class="title">Files</div>
+    <br />
+
     <div class="notes-actions">
         <button class="upload-button" type="button" (click)="triggerFileInput()" [disabled]="uploading">
-            {{ uploading ? 'Uploading...' : 'Add Notes' }}
+            {{ uploading ? 'Uploading...' : 'Upload Files' }}
         </button>
-        <button class="bulk-button" type="button" (click)="deleteSelectedFiles()">
-            Delete Selected
-        </button>
-        <button class="bulk-button" type="button" (click)="shareSelectedFiles()">
-            Share Selected
-        </button>
-        <input class="search-bar" type="text" placeholder="Search..">
+
+        <ng-container *ngIf="selectedCount > 0">
+            <button class="bulk-button" type="button" (click)="deleteSelectedFiles()">Delete Selected</button>
+            <button class="bulk-button" type="button" (click)="shareSelectedFiles()">Share Selected</button>
+            <button class="bulk-button" type="button" (click)="runAiAction('questions')" [disabled]="isAiLoading">Generate Questions</button>
+            <button class="bulk-button" type="button" (click)="runAiAction('flashcards')" [disabled]="isAiLoading">Generate Flashcards</button>
+            <span class="selection-count">{{ selectedCount }} item(s) selected</span>
+        </ng-container>
+
+        <input
+            class="search-bar"
+            type="text"
+            placeholder="Search.."
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="searchFiles()"
+        />
+        <button class="search-button" type="button" (click)="searchFiles()">Search</button>
     </div>
-    <input #fileInput type="file" class="file-input" accept=".pdf,.png,.jpg,.jpeg,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx" (change)="onFileSelected($event)">
+
     <div *ngIf="message" class="upload-message">{{ message }}</div>
 
-    <br>
-    <app-notes-list></app-notes-list>
+    <app-notes-list #notesList (selectionCountChange)="onSelectionCountChange($event)"></app-notes-list>
+</div>
+
+<input #fileInput class="file-input" type="file" (change)="onFileSelected($event)" />
+
+<!-- Add Notes Modal -->
+<div class="add-notes-backdrop" *ngIf="isAddNotesModalOpen" (click)="closeAddNotesModal()"></div>
+<div class="add-notes-modal" *ngIf="isAddNotesModalOpen" (click)="closeAddNotesModal()">
+    <div class="add-notes-card" role="dialog" aria-modal="true" aria-label="Add notes" (click)="$event.stopPropagation()">
+        <div class="add-notes-header">
+            <h3>Add Notes</h3>
+            <button class="close-modal-btn" type="button" aria-label="Close" (click)="closeAddNotesModal()">×</button>
+        </div>
+
+        <div class="option-group">
+            <label class="option-label" for="uploadFileName">File Name</label>
+            <input
+                id="uploadFileName"
+                class="ai-action-input"
+                type="text"
+                maxlength="120"
+                placeholder="Enter a display name"
+                [(ngModel)]="uploadFileName"
+            />
+        </div>
+
+        <div class="option-group">
+            <span class="option-label">Visibility</span>
+            <div class="option-toggle">
+                <label>
+                    <input
+                        type="radio"
+                        name="visibility"
+                        [checked]="uploadVisibility === 'PRIVATE'"
+                        (change)="setUploadVisibility('PRIVATE')"
+                    />
+                    <span>Private</span>
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="visibility"
+                        [checked]="uploadVisibility === 'PUBLIC'"
+                        (change)="setUploadVisibility('PUBLIC')"
+                    />
+                    <span>Public</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="option-group">
+            <span class="option-label">File Type</span>
+            <div class="option-toggle">
+                <label>
+                    <input
+                        type="radio"
+                        name="fileType"
+                        [checked]="uploadFileType === 'NOTES'"
+                        (change)="setUploadFileType('NOTES')"
+                    />
+                    <span>Notes</span>
+                </label>
+                <label>
+                    <input
+                        type="radio"
+                        name="fileType"
+                        [checked]="uploadFileType === 'PAST_YEAR_PAPER'"
+                        (change)="setUploadFileType('PAST_YEAR_PAPER')"
+                    />
+                    <span>Past Year Paper</span>
+                </label>
+            </div>
+        </div>
+
+        <div
+            class="upload-drop-zone"
+            [class.drag-over]="isDragOver"
+            (click)="chooseFileFromModal()"
+            (dragover)="onUploadDragOver($event)"
+            (dragleave)="onUploadDragLeave($event)"
+            (drop)="onUploadDrop($event)"
+        >
+            <p class="drop-zone-title">Drag and drop a file here</p>
+            <p class="drop-zone-subtext">or click to choose a file</p>
+            <p class="drop-zone-subtext selected" *ngIf="pendingUploadFile">{{ pendingUploadFile.name }}</p>
+        </div>
+
+        <div class="add-notes-actions">
+            <button class="bulk-button" type="button" [disabled]="!canUploadSelectedFile" (click)="submitUpload()">
+                {{ uploading ? 'Uploading...' : 'Upload' }}
+            </button>
+            <button class="upload-button" type="button" (click)="closeAddNotesModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<div class="ai-action-backdrop" *ngIf="activeAiModal" (click)="closeAiModal()"></div>
+<div class="ai-action-modal" *ngIf="activeAiModal" (click)="closeAiModal()">
+    <div class="ai-action-card" role="dialog" aria-modal="true" aria-label="AI action" (click)="$event.stopPropagation()">
+        <h3>{{ aiModalTitle }}</h3>
+        <p>{{ aiModalDescription }}</p>
+
+        <div [ngSwitch]="activeAiModal">
+            <!--Generate Questions Modal-->
+            <div *ngSwitchCase="'questions'" class="ai-action-field">
+                <label for="questionsCount">Number of Questions</label>
+                <input
+                    class="ai-action-input"
+                    type="number"
+                    id="questionsCount"
+                    [(ngModel)]="questionsForm.count"
+                    min="3"
+                    max="20"
+                />
+                <label for="difficulty">Difficulty</label>
+                <select id="difficulty" [(ngModel)]="questionsForm.difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+
+                <label for="type">Question Type</label>
+                <select id="type" [(ngModel)]="questionsForm.type">
+                    <option value="mixed">Mixed</option>
+                    <option value="mcq">Multiple Choice</option>
+                    <option value="short">Short Answer</option>
+                    <option value="essay">Essay</option>
+                </select>
+            </div>
+
+            <!--Generate Flashcards Modal-->
+            <div *ngSwitchCase="'flashcards'" class="ai-action-field">
+                <label for="flashcardsCount">Number of Flashcards</label>
+                <input
+                    class="ai-action-input"
+                    type="number"
+                    id="flashcardsCount"
+                    [(ngModel)]="flashcardsForm.count"
+                    min="5"
+                    max="30"
+                />
+                <label for="difficulty">Difficulty</label>
+                <select id="difficulty" [(ngModel)]="flashcardsForm.difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+
+
+        </div>
+
+        <p class="ai-action-validation" *ngIf="aiValidationMessage">{{ aiValidationMessage }}</p>
+
+        <div class="ai-action-actions">
+            <button class="bulk-button" type="button" [disabled]="!canRunAiAction" (click)="confirmAiAction()">Run</button>
+            <button class="upload-button" type="button" (click)="closeAiModal()">Cancel</button>
+        </div>
+    </div>
 </div>

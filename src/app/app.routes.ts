@@ -8,6 +8,7 @@ import { RegisterComponent } from './pages/register/register';
 import { Calendar } from './pages/calendar/calendar';
 import { Record } from './pages/record/record';
 import { Notes } from './pages/notes/notes';
+import { Flashcard } from './pages/flashcard/flashcard';
 import { SessionsList } from './pages/sessions-list/sessions-list';
 
 export const routes: Routes = [
@@ -27,6 +28,7 @@ export const routes: Routes = [
       { path: 'sessions-list', component: SessionsList },
       { path: 'record', component: Record },
       { path: 'notes', component: Notes },
+      { path: 'flashcards', component: Flashcard }
     ],
   },
 

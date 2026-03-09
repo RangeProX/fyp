@@ -5,7 +5,7 @@ import multer from 'multer';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import authMiddleware from '../middleware/auth.middleware.js';
-import { downloadFile, listFiles, shareFile, uploadFile, deleteFile, previewFile, extractData, summarizeFile } from '../controllers/files.controller.js';
+import { downloadFile, listFiles, shareFile, uploadFile, deleteFile, previewFile } from '../controllers/files.controller.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -86,7 +86,5 @@ router.get('/:id/preview', authMiddleware, previewFile);
 router.get('/:id', authMiddleware, downloadFile);
 router.post('/:id/share', authMiddleware, shareFile);
 router.delete('/:id', authMiddleware, deleteFile);
-router.post('/:id/extract-data', authMiddleware, extractData);
-router.post('/ai/summarize/:fileId', authMiddleware, summarizeFile);
 
 export default router;

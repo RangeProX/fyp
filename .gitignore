@@ -45,6 +45,8 @@ Thumbs.db
 # Backend runtime data
 /backend/users.db
 /backend/data/*.db
+/backend/.env
 
 # Uploaded files
 /backend/uploads/*
+!/backend/uploads/.gitkeep

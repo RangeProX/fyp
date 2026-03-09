@@ -5,15 +5,38 @@
     padding: 10px;
 }
 
+/* From Uiverse.io by cohencoo */ 
 .search-bar {
-    display: block;
-    padding: 12px;
-    font-size: 16px;
-    border: 2px solid #ddd;
-    border-radius: 5px;
-    width: 40%;
-    margin-left: auto;
-    margin-right: 0;
+  border-radius: 10px;
+  outline: 2px solid #4c8ef8;
+  border: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: #e2e2e2;
+  outline-offset: 3px;
+  padding: 10px 1rem;
+  transition: 0.25s;
+  margin-left: auto;
+  margin-right: 0;
+  width: 500px;
+}
+
+.search-bar:focus {
+  outline-offset: 5px;
+  background-color: #fff
+}
+
+.search-button {
+  cursor: pointer;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: none;
+  border-radius: 5px;
+  background-color: #111827;
+  color: #fff;
+}
+
+.search-button:hover:not(:disabled) {
+  background-color: #1f2937;
 }
 
 .notes-actions {
@@ -35,13 +58,7 @@
     align-items: center;
 }
 
-.upload-button.disabled {
-    cursor: not-allowed;
-    background-color: #93c5fd;
-    pointer-events: none;
-}
-
-.upload-button:hover:not(.disabled) {
+  .upload-button:hover:not(:disabled) {
     background-color: #3b82f6;
 }
 
@@ -55,8 +72,22 @@
     color: #fff;
 }
 
-.bulk-button:hover {
+.bulk-button:hover:not(:disabled) {
     background-color: #1f2937;
+}
+
+.search-button:disabled,
+.upload-button:disabled,
+.bulk-button:disabled {
+  cursor: not-allowed;
+  background-color: #9ca3af;
+  color: #fff;
+}
+
+.selection-count {
+    font-size: 13px;
+    color: #475569;
+    margin-left: 2px;
 }
 
 .file-input {
@@ -68,3 +99,240 @@
     font-size: 14px;
     color: #333;
 }
+
+.add-notes-backdrop,
+.ai-action-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 999;
+}
+
+.add-notes-modal,
+.ai-action-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+.add-notes-modal {
+    width: min(520px, calc(100% - 32px));
+}
+
+.add-notes-card,
+.ai-action-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.add-notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.add-notes-header h3 {
+    margin: 0;
+    font-size: 22px;
+    color: #333;
+}
+
+.close-modal-btn {
+    width: auto;
+    height: auto;
+    margin: 0;
+    background: transparent;
+    color: #475569;
+    font-size: 26px;
+    line-height: 1;
+    border: none;
+    cursor: pointer;
+}
+
+.add-notes-actions {
+    margin-top: 14px;
+    display: flex;
+    gap: 10px;
+}
+
+.add-notes-actions .upload-button,
+.add-notes-actions .bulk-button,
+.ai-action-actions .bulk-button,
+.ai-action-actions .upload-button {
+    width: auto;
+    height: auto;
+    margin: 0;
+}
+
+.upload-drop-zone {
+  margin-top: 14px;
+  border: 2px dashed #93c5fd;
+  border-radius: 8px;
+  padding: 18px 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background-color: #f8fbff;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  height: 300px;
+  margin-left:auto;
+  margin-right: auto;
+}
+
+.upload-drop-zone.drag-over {
+  border-color: #2563eb;
+  background-color: #eaf2ff;
+}
+
+.drop-zone-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.drop-zone-subtext {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.drop-zone-subtext.selected {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* From Uiverse.io by Pradeepsaranbishnoi */
+.option-group {
+  margin-top: 12px;
+}
+
+.option-label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.option-toggle input[type="radio"]:focus + span {
+  outline: 0;
+  border-color: #2260ff;
+  box-shadow: 0 0 0 4px #b5c9fc;
+}
+
+.option-toggle {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  margin-top: 0.5rem;
+  justify-content: flex-start;
+  width: auto;
+}
+
+.option-toggle label {
+  display: inline-flex;
+  width: auto;
+  margin: 0;
+}
+
+.option-toggle input[type="radio"] {
+  clip: rect(0 0 0 0);
+  clip-path: inset(100%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.option-toggle input[type="radio"]:checked + span {
+  box-shadow: 0 0 0 0.0625em #0043ed;
+  background-color: #dee7ff;
+  z-index: 1;
+  color: #0043ed;
+}
+
+.option-toggle span {
+  display: block;
+  cursor: pointer;
+  background-color: #fff;
+  padding: 0.375em .75em;
+  position: relative;
+  margin-left: .0625em;
+  box-shadow: 0 0 0 0.0625em #b5bfd9;
+  letter-spacing: .05em;
+  color: #3e4963;
+  text-align: center;
+  transition: background-color .5s ease;
+  white-space: nowrap;
+}
+
+.option-toggle label:first-child span {
+  border-radius: .375em 0 0 .375em;
+}
+
+.option-toggle label:last-child span {
+  border-radius: 0 .375em .375em 0;
+}
+
+.ai-action-modal {
+  width: min(440px, calc(100% - 32px));
+}
+
+.ai-action-card h3 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  color: #333;
+}
+
+.ai-action-card p {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+}
+
+.ai-action-field {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-action-field label {
+  font-size: 13px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.ai-action-input,
+.ai-action-textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.ai-action-input:focus,
+.ai-action-textarea:focus {
+  outline: 2px solid #93c5fd;
+  border-color: #60a5fa;
+}
+
+.ai-action-validation {
+  margin-top: 10px;
+  color: #dc2626 !important;
+  font-size: 12px !important;
+}
+
+.ai-action-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+}
+

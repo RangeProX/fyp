@@ -1,22 +1,80 @@
 <div class="container">
   <div class="notes-list-wrapper">
     <div class="list-header">
-      <h2>Your Notes</h2>
-      <div class="ai-actions">
-        <span class="selection-count">Selected: {{ selectedFileIds.size }}</span>
-        <button class="ai-btn" type="button" (click)="runAiAction('questions')" [disabled]="selectedFileIds.size === 0">
-          Generate Questions
+      <h2>Your Files</h2>
+    </div>
+
+    <div *ngIf="aiLoading" class="ai-state-message">Running AI...</div>
+    <div *ngIf="aiError" class="ai-state-message error">{{ aiError }}</div>
+
+    <!-- AI Results Panel -->
+    <div *ngIf="hasAiResult" class="ai-result-panel">
+      <div class="ai-result-header">
+        <h3 *ngIf="aiAction === 'questions'">Generated Questions</h3>
+        <h3 *ngIf="aiAction === 'flashcards'">Generated Flashcards</h3>
+        <button class="ai-clear-btn" type="button" (click)="clearAiResult()">Clear</button>
+        <button class="show-answer-btn" *ngIf="aiAction === 'questions'" type="button" (click)="toggleShowAnswer()">
+          {{ showAnswer ? 'Hide Answers' : 'Show Answers' }}
         </button>
-        <button class="ai-btn" type="button" (click)="runAiAction('flashcards')" [disabled]="selectedFileIds.size === 0">
-          Generate Flashcards
+        <button class="select-btn" type="button" *ngIf="aiAction === 'flashcards' && !isSelectingFlashcards" (click)="selectFlashcards()">
+          Select
         </button>
-        <button class="ai-btn" type="button" (click)="runAiAction('summarize')" [disabled]="selectedFileIds.size === 0">
-          Summarize
+        <button class="save-btn" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="!canSaveSelectedFlashcards" (click)="saveSelectedFlashcards()">
+          {{ savingSelectedFlashcards ? 'Saving...' : 'Save' }}
         </button>
-        <button class="ai-btn secondary" type="button" (click)="clearSelection()" [disabled]="selectedFileIds.size === 0">
-          Clear
+        <button class="cancel-select-btn" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="savingSelectedFlashcards" (click)="cancelSelectFlashcards()">
+          Cancel
         </button>
       </div>
+
+      <div *ngIf="aiAction === 'questions'" class="ai-list">
+        <div *ngFor="let item of questionResults" class="ai-item">
+          <p><strong>Q:</strong> {{ item.question }}</p>
+          <div *ngIf="item.options?.length" class="mcq-options">
+            <p><strong>Options:</strong></p>
+            <ul>
+              <li *ngFor="let option of item.options">{{ option }}</li>
+            </ul>
+          </div>
+          <p><strong>A:</strong> {{ showAnswer ? getQuestionAnswer(item) : "" }}</p>
+        </div>
+      </div>
+
+      <div *ngIf="aiAction === 'flashcards'" class="ai-list ai-flashcards">
+        <div
+          *ngFor="let card of flashcardResults; let index = index"
+          class="flip-card"
+          [class.flipped]="isFlashcardFlipped(index)"
+          [class.selection-mode]="isSelectingFlashcards"
+          [class.selected]="isFlashcardSelected(index)"
+          (click)="toggleFlashcard(index)"
+          role="button"
+          tabindex="0"
+          (keydown.enter)="toggleFlashcard(index)"
+          (keydown.space)="toggleFlashcard(index); $event.preventDefault()"
+        >
+          <div class="flip-card-inner">
+            <div class="flip-card-front">
+              <p class="flip-card-title">CARD {{ index + 1 }}</p>
+              <p>{{ card.front }}</p>
+            </div>
+            <div class="flip-card-back">
+              <p class="flip-card-title">ANSWER</p>
+              <p>{{ card.back }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" class="selection-note">
+        {{ selectedFlashcardCount }} card(s) selected.
+      </p>
+
+      <p *ngIf="aiAction === 'flashcards' || aiAction === 'questions'" class="ai-note">
+        Remember to export your {{ aiAction === 'flashcards' ? 'flashcards' : 'questions' }} if you want to keep them, as they won't be saved when you log out or generate new AI results.
+      </p>
+
+
     </div>
 
     <div *ngIf="loading" class="state-message">Loading files...</div>
@@ -27,39 +85,50 @@
       No files uploaded yet.
     </div>
 
-    <div *ngIf="!loading && !error && files.length > 0" class="files-table">
+    <div *ngIf="!loading && !error && files.length > 0 && filteredFiles.length === 0" class="state-message empty">
+      No files match your search.
+    </div>
+
+    <div *ngIf="!loading && !error && filteredFiles.length > 0" class="files-table">
       <div class="table-header">
         <div class="col-name">File Name</div>
+        <div class="col-extension">Extension</div>  
         <div class="col-type">Type</div>
+        <div class="col-visibility">Visibility</div>
         <div class="col-size">Size</div>
-        <div class="col-date">Date Created</div>
+        <div class="col-date">Date Uploaded</div>
         <div class="col-owner">Owner</div>
         <div class="col-select">Select</div>
       </div>
-      <div *ngFor="let file of files" class="table-row" [class.selected]="isSelected(file.id)" (click)="toggleSelectFile(file.id)">
+      <div *ngFor="let file of filteredFiles" class="table-row" [class.selected]="isSelected(file.id)" (click)="toggleSelectFile(file.id)">
         <div class="col-name">
           <button class="file-link" type="button" (click)="previewFile(file); $event.stopPropagation()" title="Preview file">
             {{ file.originalName }}
           </button>
         </div>
-        <div class="col-type">{{ getFileExtension(file) }}</div>
+        <div class="col-extension">{{ getFileExtension(file) }}</div>
+        <div class="col-type">{{ file.fileType }}</div>
+        <div class="col-visibility">{{ file.visibility }}</div>
         <div class="col-size">{{ formatFileSize(file.size) }}</div>
         <div class="col-date">{{ formatDate(file.createdAt) }}</div>
         <div class="col-owner">{{ file.owner?.username || 'Unknown' }}</div>
         <div class="col-select">
-          <input
-            type="checkbox"
-            [checked]="isSelected(file.id)"
-            (change)="toggleSelectFile(file.id)"
-            (click)="$event.stopPropagation()"
-            aria-label="Select file"
-          >
+          <label class="checkbox-wrap" (click)="$event.stopPropagation()">
+            <input
+              type="checkbox"
+              [checked]="isSelected(file.id)"
+              (change)="toggleSelectFile(file.id)"
+              aria-label="Select file"
+            >
+            <span class="checkmark"></span>
+          </label>
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Share File Modal -->
 <div class="modal-backdrop" *ngIf="shareModalOpen" (click)="closeShareModal()"></div>
 <div class="modal" *ngIf="shareModalOpen" (click)="closeShareModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">

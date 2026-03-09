@@ -2,13 +2,30 @@
     <h1>Record your study session!</h1>
     <form (ngSubmit)="startSession()" *ngIf="!isSessionActive">
         <label for="subject">Subject:</label>
-        <input type="text" id="subject" name="subject" [(ngModel)]="subject">
+        <input
+        type="text"
+        id="subject"
+        name="subject"
+        [(ngModel)]="subject"
+        placeholder="Enter the subject"
+        >
         <br>
         <label for="goals">Goals:</label>
-        <textarea type="text" id="goals" name="goals" [(ngModel)]="goals"></textarea>
+        <textarea
+        type="text"
+        id="goals"
+        name="goals"
+        [(ngModel)]="goals"
+        placeholder="What do you want to accomplish in this session?"
+        ></textarea>
         <br>
         <label for="remarks">Remarks (optional):</label>
-        <textarea id="remarks" name="remarks" [(ngModel)]="remarks"></textarea>
+        <textarea
+        id="remarks"
+        name="remarks"
+        [(ngModel)]="remarks"
+        placeholder="Additional notes to self"
+        ></textarea>
         <br>
         <button type="submit">Start Session</button>
     </form>

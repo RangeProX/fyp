@@ -27,6 +27,7 @@ export class Auth {
 
   logout() {
     localStorage.removeItem('token');
+    localStorage.removeItem('notesList.aiState');
   }
 
   getToken() {

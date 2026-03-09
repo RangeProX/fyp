@@ -19,6 +19,7 @@
     </li>
   </ul>
 
+  <!-- Session Details Modal -->
   <div class="modal-backdrop" *ngIf="selectedSession" (click)="closeSessionDetails()">
     <div class="modal-card" role="dialog" aria-modal="true" aria-label="Session details" (click)="$event.stopPropagation()">
       <h3>{{ selectedSession.sessionTitle }}</h3>
@@ -29,6 +30,7 @@
       <p><strong>Progress:</strong> {{ selectedSession.progress || '-' }}</p>
       <p><strong>Paused:</strong> {{ selectedSession.pausedCount }} times</p>
       <p><strong>Saved:</strong> {{ selectedSession.createdAt | date:'medium' }}</p>
+      <p>AI Insights:</p>
       <div class="modal-actions">
         <button type="button" class="delete-button" (click)="deleteSession(selectedSession.sessionId)">Delete</button>
         <button type="button" class="close-button" (click)="closeSessionDetails()">Close</button>

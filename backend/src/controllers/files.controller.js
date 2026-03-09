@@ -1,26 +1,65 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { createRequire } from 'module';
 import prisma from '../config/prisma.js';
-
-const require = createRequire(import.meta.url);
-const pdfParse = require('pdf-parse');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const backendRoot = path.join(__dirname, '../../');
 
+const FILE_VISIBILITY_VALUES = new Set(['PRIVATE', 'PUBLIC']);
+const FILE_TYPE_VALUES = new Set(['NOTES', 'PAST_YEAR_PAPER']);
+
+const normalizeFileVisibility = (value) => {
+  const normalized = String(value || '').trim().toUpperCase();
+  return FILE_VISIBILITY_VALUES.has(normalized) ? normalized : 'PRIVATE';
+};
+
+const normalizeFileType = (value) => {
+  const normalized = String(value || '').trim().toUpperCase().replace(/\s+/g, '_');
+  return FILE_TYPE_VALUES.has(normalized) ? normalized : 'NOTES';
+};
+
+const normalizeFileName = (value, fallbackName) => {
+  const fallback = String(fallbackName || 'file').trim() || 'file';
+  const raw = String(value || '').trim();
+
+  if (!raw) {
+    return fallback;
+  }
+
+  const sanitized = raw
+    .replace(/[\\/]/g, '-')
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!sanitized) {
+    return fallback;
+  }
+
+  const fallbackExtension = path.extname(fallback);
+  const hasExtension = path.extname(sanitized).length > 0;
+  const withExtension = !hasExtension && fallbackExtension
+    ? `${sanitized}${fallbackExtension}`
+    : sanitized;
+
+  return withExtension.slice(0, 255);
+};
+
 export const uploadFile = async (req, res) => {
   const file = req.file;
   const fileId = req.fileId;
   const userId = req.user?.id;
+  const fileType = normalizeFileType(req.body?.fileType);
+  const visibility = normalizeFileVisibility(req.body?.visibility);
 
   if (!file || !fileId || !userId) {
     return res.status(400).json({ message: 'Invalid upload' });
   }
 
   const relativePath = path.relative(backendRoot, file.path);
+  const fileName = normalizeFileName(req.body?.fileName, file.originalname);
 
   // create row for file and persmission, if one fails, file doesnt upload.
   try {
@@ -29,9 +68,11 @@ export const uploadFile = async (req, res) => {
         data: {
           id: fileId,
           ownerId: userId,
-          originalName: file.originalname,
+          originalName: fileName,
           mimeType: file.mimetype,
           size: file.size,
+          fileType,
+          visibility,
           storagePath: relativePath,
         },
       }),
@@ -46,9 +87,11 @@ export const uploadFile = async (req, res) => {
 
     res.status(201).json({
       id: fileId,
-      name: file.originalname,
+      name: fileName,
       size: file.size,
       mimeType: file.mimetype,
+      fileType,
+      visibility,
     });
   } catch (err) {
     // if error, delete uploaded file
@@ -83,6 +126,8 @@ export const listFiles = async (req, res) => {
         originalName: true,
         mimeType: true,
         size: true,
+        fileType: true,
+        visibility: true,
         createdAt: true,
         ownerId: true,
         owner: {
@@ -263,87 +308,3 @@ export const deleteFile = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete file' });
   }
 };
-
-// TODO: data extraction from file
-export const extractData = async (req, res) => {
-  const userId = req.user?.id;
-  const fileId = req.params.id;
-
-  if (!userId) {
-    return res.status(401).json({ message: 'Session expired. Please log in again.' });
-  }
-
-  try {
-    const access = await prisma.filePermission.findUnique({
-      where: {
-        fileId_userId: { fileId, userId },
-      },
-    });
-
-    if (!access) {
-      return res.status(403).json({ message: 'You have no access to this file.' });
-    }
-
-    const file = await prisma.file.findUnique({ where: { id: fileId } });
-    if (!file) {
-      return res.status(404).json({ message: 'File not found' });
-    }
-
-    if (file.mimeType !== 'application/pdf') {
-      return res.status(400).json({ message: 'Only PDF extraction is supported right now.' });
-    }
-
-    const absolutePath = path.join(backendRoot, file.storagePath);
-    if (!fs.existsSync(absolutePath)) {
-      return res.status(404).json({ message: 'File not found' });
-    }
-
-    await prisma.file.update({
-      where: { id: fileId },
-      data: { processingStatus: 'processing', processingError: null },
-    });
-
-    const buffer = await fs.promises.readFile(absolutePath);
-    const result = await pdfParse(buffer);
-    const text = result?.text || '';
-
-    await prisma.file.update({
-      where: { id: fileId },
-      data: { extractedText: text },
-    });
-
-    res.json({ message: 'Extraction complete', text });
-  } catch (err) {
-    await prisma.file.update({
-      where: { id: fileId },
-      data: { processingStatus: 'failed', processingError: 'Extraction failed' },
-    }).catch(() => {});
-    res.status(500).json({ message: 'Failed to extract data' });
-  }
-};
-
-// TODO: summarization using AI
-export const summarizeFile = async (req, res) => {
-  const userId = req.user?.id;
-  const fileId = req.params.id;
-
-  if (!userId) {
-    return res.status(401).json({ message: 'Session expired. Please log in again.' });
-  }
-  
-  try {
-    const access = await prisma.filePermission.findUnique({
-      where: {
-        fileId_userId: { fileId, userId },
-      },
-    });
-
-    if (!access) {
-      return res.status(403).json({ message: 'You have no access to this file.' });
-    }
-
-    res.json({ message: 'Feature coming soon' });
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to summarize file' });
-  }
-}

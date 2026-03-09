@@ -18,6 +18,7 @@ model UserAuth {
   events      Event[]
   eventPermissions EventPermission[] @relation("UserEventPermissions")
   sessions    Session[]
+  savedFlashcards SavedFlashcard[]
 
   @@map("users_auth")
 }
@@ -28,12 +29,24 @@ enum EventVisibility {
   PUBLIC
 }
 
+enum FileType {
+  NOTES
+  PAST_YEAR_PAPER
+}
+
+enum FileVisibility {
+  PRIVATE
+  PUBLIC
+}
+
 model File {
   id           String           @id
   ownerId      Int              @map("owner_id")
   originalName String           @map("original_name")
   mimeType     String           @map("mime_type")
   size         Int
+  fileType     FileType         @default(NOTES) @map("file_type")
+  visibility   FileVisibility   @default(PRIVATE)
   storagePath  String           @map("storage_path")
   createdAt    DateTime?        @default(now()) @map("created_at")
   owner        UserAuth         @relation("UserFiles", fields: [ownerId], references: [id])
@@ -114,4 +127,17 @@ model Session {
 
   @@index([userId])
   @@map("sessions")
+}
+
+model SavedFlashcard {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  front     String
+  back      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user UserAuth @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("saved_flashcards")
 }
