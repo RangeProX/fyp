@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { Flashcard } from './flashcard';
 
@@ -8,7 +10,8 @@ describe('Flashcard', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Flashcard]
+      imports: [Flashcard],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     })
     .compileComponents();
 

@@ -6,6 +6,37 @@
         <app-upcoming-events></app-upcoming-events>
         <br>
         <app-analytics></app-analytics>
-        <p>Flashcards</p>
+        <div class="flashcard-widget">
+            <p>Flashcards</p>
+
+            <div *ngIf="flashcardLoading" class="flashcard-state">Loading flashcard...</div>
+            <div *ngIf="flashcardError" class="flashcard-state error">{{ flashcardError }}</div>
+            <div *ngIf="!flashcardLoading && !flashcardError && !randomFlashcard" class="flashcard-state">
+                No saved flashcards yet.
+            </div>
+
+            <div *ngIf="!flashcardLoading && !flashcardError && randomFlashcard" class="ai-list ai-flashcards">
+                <div
+                    class="flip-card"
+                    [class.flipped]="isRandomCardFlipped"
+                    (click)="toggleRandomFlashcard()"
+                    role="button"
+                    tabindex="0"
+                    (keydown.enter)="toggleRandomFlashcard()"
+                    (keydown.space)="toggleRandomFlashcard(); $event.preventDefault()"
+                >
+                    <div class="flip-card-inner">
+                        <div class="flip-card-front">
+                            <p class="flip-card-title">QUESTION</p>
+                            <p>{{ randomFlashcard.front }}</p>
+                        </div>
+                        <div class="flip-card-back">
+                            <p class="flip-card-title">ANSWER</p>
+                            <p>{{ randomFlashcard.back }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

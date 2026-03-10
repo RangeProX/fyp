@@ -12,6 +12,10 @@ type SessionItem = {
   focusLevel: number;
   progress?: string | null;
   pausedCount: number;
+  aiInsightStatus?: string;
+  aiInsight?: string | null;
+  aiInsightReason?: string | null;
+  aiInsightGeneratedAt?: string | null;
   createdAt: string;
 };
 
@@ -26,6 +30,7 @@ export class SessionsList implements OnInit {
   sessions: SessionItem[] = [];
   selectedSession: SessionItem | null = null;
   isLoading = false;
+  isGeneratingInsight = false;
   error = '';
 
   private readonly apiUrl = '/api/sessions';
@@ -97,5 +102,57 @@ export class SessionsList implements OnInit {
   closeSessionDetails(): void {
     this.selectedSession = null;
     this.cdr.detectChanges();
+  }
+
+  formatInsightStatus(status?: string | null): string {
+    const normalized = String(status || '').trim().toLowerCase();
+
+    if (!normalized || normalized === 'none') {
+      return 'Not generated';
+    }
+
+    if (normalized === 'generated') {
+      return 'Generated';
+    }
+
+    if (normalized === 'skipped') {
+      return 'Skipped by conditions';
+    }
+
+    if (normalized === 'failed') {
+      return 'Generation failed';
+    }
+
+    return normalized;
+  }
+
+  generateInsight(sessionId: number): void {
+    if (this.isGeneratingInsight) {
+      return;
+    }
+
+    this.isGeneratingInsight = true;
+    this.error = '';
+    this.cdr.detectChanges();
+
+    this.http.post<SessionItem>(`${this.apiUrl}/${sessionId}/insight`, {}).subscribe({
+      next: (updatedSession) => {
+        this.sessions = this.sessions.map((session) =>
+          session.sessionId === sessionId ? updatedSession : session
+        );
+
+        if (this.selectedSession?.sessionId === sessionId) {
+          this.selectedSession = updatedSession;
+        }
+
+        this.isGeneratingInsight = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isGeneratingInsight = false;
+        this.error = 'Failed to generate session insight.';
+        this.cdr.detectChanges();
+      },
+    });
   }
 }

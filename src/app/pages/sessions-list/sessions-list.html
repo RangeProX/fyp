@@ -30,8 +30,14 @@
       <p><strong>Progress:</strong> {{ selectedSession.progress || '-' }}</p>
       <p><strong>Paused:</strong> {{ selectedSession.pausedCount }} times</p>
       <p><strong>Saved:</strong> {{ selectedSession.createdAt | date:'medium' }}</p>
-      <p>AI Insights:</p>
+      <p><strong>AI Insight:</strong> {{ selectedSession.aiInsight || '-' }}</p>
+      <p><strong>Insight Status:</strong> {{ formatInsightStatus(selectedSession.aiInsightStatus) }}</p>
+      <p *ngIf="selectedSession.aiInsightReason"><strong>Insight Note:</strong> {{ selectedSession.aiInsightReason }}</p>
+      <p *ngIf="selectedSession.aiInsightGeneratedAt"><strong>Generated:</strong> {{ selectedSession.aiInsightGeneratedAt | date:'medium' }}</p>
       <div class="modal-actions">
+        <button type="button" class="generate-button" [disabled]="isGeneratingInsight" (click)="generateInsight(selectedSession.sessionId)">
+          {{ isGeneratingInsight ? 'Generating...' : 'Generate Insight' }}
+        </button>
         <button type="button" class="delete-button" (click)="deleteSession(selectedSession.sessionId)">Delete</button>
         <button type="button" class="close-button" (click)="closeSessionDetails()">Close</button>
       </div>

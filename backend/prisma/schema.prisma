@@ -121,6 +121,10 @@ model Session {
   remarks         String?
   progress        String?
   pausedCount     Int       @default(0) @map("paused_count")
+  aiInsightStatus String    @default("none") @map("ai_insight_status")
+  aiInsight       String?   @map("ai_insight")
+  aiInsightReason String?   @map("ai_insight_reason")
+  aiInsightGeneratedAt DateTime? @map("ai_insight_generated_at")
   createdAt       DateTime  @default(now()) @map("created_at")
 
   user UserAuth @relation(fields: [userId], references: [id])
@@ -132,6 +136,7 @@ model Session {
 model SavedFlashcard {
   id        Int      @id @default(autoincrement())
   userId    Int      @map("user_id")
+  group     String   @map("group_name")
   front     String
   back      String
   createdAt DateTime @default(now()) @map("created_at")

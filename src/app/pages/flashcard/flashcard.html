@@ -1,1 +1,75 @@
-<p>flashcard works!</p>
+<div class="container">
+	
+	<div class="notes-list-wrapper">
+		<div class="list-header">
+			<h2>Saved Flashcards</h2>
+			<div class="header-controls">
+				<input
+					class="search-input"
+					type="text"
+					[(ngModel)]="searchQuery"
+					placeholder="Search"
+					[disabled]="loading || groupedFlashcards.length === 0 || isSelectingFlashcards"
+				>
+				<select class="select-group" [(ngModel)]="selectedGroup" [disabled]="loading || groupedFlashcards.length === 0 || isSelectingFlashcards">
+					<option [value]="allGroupOption">All</option>
+					<option *ngFor="let groupName of groupOptions" [value]="groupName">{{ groupName }}</option>
+				</select>
+				<button class="select-btn" type="button" *ngIf="!isSelectingFlashcards" [disabled]="loading || groupedFlashcards.length === 0" (click)="selectFlashcards()">
+					Select
+				</button>
+				<button class="delete-btn" type="button" *ngIf="isSelectingFlashcards" [disabled]="!canDeleteSelectedFlashcards" (click)="deleteSelectedFlashcards()">
+					{{ deletingSelectedFlashcards ? 'Deleting...' : 'Delete' }}
+				</button>
+				<button class="cancel-select-btn" type="button" *ngIf="isSelectingFlashcards" [disabled]="deletingSelectedFlashcards" (click)="cancelSelectFlashcards()">
+					Cancel
+				</button>
+			</div>
+		</div>
+		<div *ngIf="isSelectingFlashcards" class="selection-note">
+			{{ selectedFlashcardCount }} card(s) selected.
+		</div>
+		<div *ngIf="loading" class="ai-state-message">Loading flashcards...</div>
+		<div *ngIf="error" class="ai-state-message error">{{ error }}</div>
+
+		<div *ngIf="!loading && !error && flashcards.length === 0" class="state-message empty">
+			No saved flashcards yet.
+		</div>
+
+		<div *ngIf="!loading && !error && flashcards.length > 0 && visibleGroupedFlashcards.length === 0" class="state-message empty">
+			No flashcards match your search.
+		</div>
+
+		<div *ngIf="!loading && !error && visibleGroupedFlashcards.length > 0" class="grouped-flashcards">
+			<section *ngFor="let group of visibleGroupedFlashcards; trackBy: trackByGroupName" class="flashcard-group">
+				<h3 class="group-title">{{ group.name }}</h3>
+
+				<div class="ai-list ai-flashcards">
+					<div
+						*ngFor="let card of group.cards; let index = index; trackBy: trackByCardId"
+						class="flip-card"
+						[class.flipped]="isFlashcardFlipped(card.id)"
+						[class.selection-mode]="isSelectingFlashcards"
+						[class.selected]="isFlashcardSelected(card.id)"
+						(click)="toggleFlashcard(card.id)"
+						role="button"
+						tabindex="0"
+						(keydown.enter)="toggleFlashcard(card.id)"
+						(keydown.space)="toggleFlashcard(card.id); $event.preventDefault()"
+					>
+						<div class="flip-card-inner">
+							<div class="flip-card-front">
+								<p class="flip-card-title">CARD {{ index + 1 }}</p>
+								<p>{{ card.front }}</p>
+							</div>
+							<div class="flip-card-back">
+								<p class="flip-card-title">ANSWER</p>
+								<p>{{ card.back }}</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+	</div>
+</div>

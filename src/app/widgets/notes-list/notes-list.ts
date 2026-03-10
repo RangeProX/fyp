@@ -76,6 +76,10 @@ export class NotesList implements OnInit {
   isSelectingFlashcards = false;
   selectedFlashcardIndexes = new Set<number>();
   savingSelectedFlashcards = false;
+  saveFlashcardsModalOpen = false;
+  clearAiResultModalOpen = false;
+  flashcardSetName = '';
+  saveFlashcardsError = '';
   shareModalOpen = false;
   shareTargetId = '';
   shareUsername = '';
@@ -234,7 +238,7 @@ export class NotesList implements OnInit {
   runAiAction(action: AiAction, options?: {
     count?: number;
     difficulty?: 'easy' | 'medium' | 'hard';
-    type?: 'mcq' | 'short' | 'essay' | 'mixed';
+    type?: 'mcq' | 'short' | 'essay';
   }) {
     if (this.selectedFileIds.size === 0) {
       return;
@@ -262,7 +266,7 @@ export class NotesList implements OnInit {
       fileIds: string[];
       count?: number;
       difficulty?: 'easy' | 'medium' | 'hard';
-      type?: 'mcq' | 'short' | 'essay' | 'mixed';
+      type?: 'mcq' | 'short' | 'essay';
     } = {
       fileIds: ids,
     };
@@ -308,6 +312,7 @@ export class NotesList implements OnInit {
   }
 
   clearAiResult() {
+    this.clearAiResultModalOpen = false;
     this.aiLoading = false;
     this.aiError = '';
     this.aiAction = null;
@@ -317,6 +322,24 @@ export class NotesList implements OnInit {
     this.selectedFlashcardIndexes.clear();
     localStorage.removeItem(this.aiStateStorageKey);
     this.cdr.detectChanges();
+  }
+
+  openClearAiResultModal() {
+    if (!this.hasAiResult) {
+      return;
+    }
+
+    this.clearAiResultModalOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closeClearAiResultModal() {
+    this.clearAiResultModalOpen = false;
+    this.cdr.detectChanges();
+  }
+
+  confirmClearAiResult() {
+    this.clearAiResult();
   }
 
   get hasAiResult() {
@@ -402,10 +425,73 @@ export class NotesList implements OnInit {
     this.cdr.detectChanges();
   }
 
+  get allFlashcardsSelected() {
+    const total = this.flashcardResults.length;
+
+    if (total === 0) {
+      return false;
+    }
+
+    return this.flashcardResults.every((_, index) => this.selectedFlashcardIndexes.has(index));
+  }
+
+  toggleSelectAllFlashcards() {
+    if (this.aiAction !== 'flashcards' || !this.isSelectingFlashcards || this.savingSelectedFlashcards) {
+      return;
+    }
+
+    const total = this.flashcardResults.length;
+
+    if (total === 0) {
+      return;
+    }
+
+    if (this.allFlashcardsSelected) {
+      this.selectedFlashcardIndexes.clear();
+    } else {
+      this.selectedFlashcardIndexes.clear();
+      for (let index = 0; index < total; index += 1) {
+        this.selectedFlashcardIndexes.add(index);
+      }
+    }
+
+    this.cdr.detectChanges();
+  }
+
+  openSaveFlashcardsModal() {
+    if (this.aiAction !== 'flashcards' || !this.canSaveSelectedFlashcards) {
+      return;
+    }
+
+    this.saveFlashcardsModalOpen = true;
+    this.flashcardSetName = String(this.flashcardSetName || '').trim();
+    this.saveFlashcardsError = '';
+
+    this.cdr.detectChanges();
+  }
+
+  closeSaveFlashcardsModal() {
+    this.saveFlashcardsModalOpen = false;
+    this.flashcardSetName = '';
+    this.saveFlashcardsError = '';
+
+    this.cdr.detectChanges();
+  }
+
   saveSelectedFlashcards() {
     if (this.aiAction !== 'flashcards' || this.savingSelectedFlashcards) {
       return;
     }
+
+    const group = String(this.flashcardSetName || '').trim();
+
+    if (!group) {
+      this.saveFlashcardsError = 'Group name is required.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.saveFlashcardsError = '';
 
     const selectedCards = Array.from(this.selectedFlashcardIndexes)
       .map((index) => this.flashcardResults[index])
@@ -423,11 +509,13 @@ export class NotesList implements OnInit {
 
     this.savingSelectedFlashcards = true;
 
-    this.http.post<SaveFlashcardsResponse>('/api/flashcards', { flashcards: selectedCards })
+    this.http.post<SaveFlashcardsResponse>('/api/flashcards', { flashcards: selectedCards, group })
       .subscribe({
         next: (response) => {
           const savedCount = Number(response?.savedCount) || selectedCards.length;
           alert(`${savedCount} flashcard(s) saved.`);
+          this.saveFlashcardsModalOpen = false;
+          this.flashcardSetName = '';
           this.isSelectingFlashcards = false;
           this.selectedFlashcardIndexes.clear();
           this.savingSelectedFlashcards = false;
@@ -440,6 +528,11 @@ export class NotesList implements OnInit {
           this.cdr.detectChanges();
         },
       });
+  }
+
+  get canSubmitSaveFlashcards() {
+    const group = String(this.flashcardSetName || '').trim();
+    return this.canSaveSelectedFlashcards && group.length > 0;
   }
 
   get canSaveSelectedFlashcards() {

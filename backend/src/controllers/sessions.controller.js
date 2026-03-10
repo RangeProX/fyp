@@ -1,4 +1,8 @@
 import prisma from '../config/prisma.js';
+import {
+  evaluateSessionInsightConditions,
+  generateSessionInsight,
+} from '../services/session-insight.service.js';
 
 const isAdminUser = async (userId) => {
   if (!userId) {
@@ -12,6 +16,34 @@ const isAdminUser = async (userId) => {
 const parseNonNegativeInt = (value) => {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+};
+
+const applySessionInsight = async (session, { force = false } = {}) => {
+  const evaluation = evaluateSessionInsightConditions(session, { force });
+
+  if (!evaluation.eligible) {
+    return prisma.session.update({
+      where: { sessionId: session.sessionId },
+      data: {
+        aiInsightStatus: 'skipped',
+        aiInsight: null,
+        aiInsightReason: `Skipped by conditions: ${evaluation.reasons.join(', ')}`,
+        aiInsightGeneratedAt: null,
+      },
+    });
+  }
+
+  const insight = await generateSessionInsight(session);
+
+  return prisma.session.update({
+    where: { sessionId: session.sessionId },
+    data: {
+      aiInsightStatus: 'generated',
+      aiInsight: insight,
+      aiInsightReason: null,
+      aiInsightGeneratedAt: new Date(),
+    },
+  });
 };
 
 export const createSession = async (req, res) => {
@@ -64,7 +96,9 @@ export const createSession = async (req, res) => {
       },
     });
 
-    res.status(201).json(session);
+    const sessionWithInsight = await applySessionInsight(session);
+
+    res.status(201).json(sessionWithInsight);
   } catch (error) {
     console.error('Create session error:', error);
     res.status(500).json({ message: 'Failed to create session.' });
@@ -240,5 +274,39 @@ export const deleteSession = async (req, res) => {
   } catch (error) {
     console.error('Delete session error:', error);
     res.status(500).json({ message: 'Failed to delete session.' });
+  }
+};
+
+export const regenerateSessionInsight = async (req, res) => {
+  const userId = req.user?.id;
+  const sessionId = Number(req.params.id);
+  const force = String(req.query?.force || '').toLowerCase() === 'true';
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Session expired. Please log in again.' });
+  }
+
+  if (!Number.isInteger(sessionId)) {
+    return res.status(400).json({ message: 'Invalid session id.' });
+  }
+
+  try {
+    const session = await prisma.session.findUnique({ where: { sessionId } });
+
+    if (!session) {
+      return res.status(404).json({ message: 'Session not found.' });
+    }
+
+    const isAdmin = await isAdminUser(userId);
+    if (!isAdmin && session.userId !== userId) {
+      return res.status(403).json({ message: 'Not allowed to generate insight for this session.' });
+    }
+
+    const sessionWithInsight = await applySessionInsight(session, { force });
+
+    return res.json(sessionWithInsight);
+  } catch (error) {
+    console.error('Regenerate session insight error:', error);
+    return res.status(500).json({ message: 'Failed to regenerate session insight.' });
   }
 };

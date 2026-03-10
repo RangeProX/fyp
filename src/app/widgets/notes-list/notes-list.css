@@ -143,9 +143,7 @@
     flex-direction: row;
     flex-wrap: wrap;
     gap: 24px;
-    column-gap: 24px;
-    row-gap: 24px;
-    padding: 4px;
+    padding: 14px;
 }
 
 .flip-card {
@@ -154,9 +152,9 @@
     height: 280px;
     perspective: 1000px;
     font-family: sans-serif;
-    margin: 2px;
+    margin: 6px;
     cursor: pointer;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .flip-card-inner {

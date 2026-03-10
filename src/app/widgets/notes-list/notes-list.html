@@ -12,19 +12,26 @@
       <div class="ai-result-header">
         <h3 *ngIf="aiAction === 'questions'">Generated Questions</h3>
         <h3 *ngIf="aiAction === 'flashcards'">Generated Flashcards</h3>
-        <button class="ai-clear-btn" type="button" (click)="clearAiResult()">Clear</button>
+        <button class="ai-clear-btn" type="button" (click)="openClearAiResultModal()">Clear</button>
         <button class="show-answer-btn" *ngIf="aiAction === 'questions'" type="button" (click)="toggleShowAnswer()">
           {{ showAnswer ? 'Hide Answers' : 'Show Answers' }}
         </button>
         <button class="select-btn" type="button" *ngIf="aiAction === 'flashcards' && !isSelectingFlashcards" (click)="selectFlashcards()">
           Select
         </button>
-        <button class="save-btn" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="!canSaveSelectedFlashcards" (click)="saveSelectedFlashcards()">
+        <button class="select-btn" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="savingSelectedFlashcards || flashcardResults.length === 0" (click)="toggleSelectAllFlashcards()">
+          {{ allFlashcardsSelected ? 'Deselect All' : 'Select All' }}
+        </button>
+        <button class="save-btn" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="!canSaveSelectedFlashcards" (click)="openSaveFlashcardsModal()">
           {{ savingSelectedFlashcards ? 'Saving...' : 'Save' }}
         </button>
         <button class="cancel-select-btn" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="savingSelectedFlashcards" (click)="cancelSelectFlashcards()">
           Cancel
         </button>
+      </div>
+      <p *ngIf="aiAction === 'flashcards'">Click on a Flashcard to see the answer!</p>
+      <div *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" class="selection-note">
+        {{ selectedFlashcardCount }} card(s) selected.
       </div>
 
       <div *ngIf="aiAction === 'questions'" class="ai-list">
@@ -66,12 +73,8 @@
         </div>
       </div>
 
-      <p *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" class="selection-note">
-        {{ selectedFlashcardCount }} card(s) selected.
-      </p>
-
       <p *ngIf="aiAction === 'flashcards' || aiAction === 'questions'" class="ai-note">
-        Remember to export your {{ aiAction === 'flashcards' ? 'flashcards' : 'questions' }} if you want to keep them, as they won't be saved when you log out or generate new AI results.
+        Remember to save your {{ aiAction === 'flashcards' ? 'flashcards' : 'questions' }} if you want to keep them, as they won't be saved when you log out or generate new AI results.
       </p>
 
 
@@ -128,6 +131,22 @@
   </div>
 </div>
 
+<!-- Clear AI Result Modal -->
+<div class="modal-backdrop" *ngIf="clearAiResultModalOpen" (click)="closeClearAiResultModal()"></div>
+<div class="modal" *ngIf="clearAiResultModalOpen" (click)="closeClearAiResultModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    Clear current AI results? This action cannot be undone.
+    <div class="modal-actions">
+      <button class="modal-submit" type="button" (click)="confirmClearAiResult()">
+        Clear
+      </button>
+      <button class="modal-cancel" type="button" (click)="closeClearAiResultModal()">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Share File Modal -->
 <div class="modal-backdrop" *ngIf="shareModalOpen" (click)="closeShareModal()"></div>
 <div class="modal" *ngIf="shareModalOpen" (click)="closeShareModal()">
@@ -156,6 +175,37 @@
       <button class="modal-submit" type="button" (click)="submitShare()" [disabled]="shareSubmitting">
         {{ shareSubmitting ? 'Sharing...' : 'Share' }}
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Save Flashcards Modal -->
+<div class="modal-backdrop" *ngIf="saveFlashcardsModalOpen" (click)="closeSaveFlashcardsModal()"></div>
+<div class="modal" *ngIf="saveFlashcardsModalOpen" (click)="closeSaveFlashcardsModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <p>Save {{ selectedFlashcardCount }} flashcard{{ selectedFlashcardCount > 1 ? 's' : '' }}?</p>
+    <div class="modal-body">
+      <label class="modal-label" for="flashcard-group">Group</label>
+      <input
+        id="flashcard-group"
+        class="modal-input"
+        type="text"
+        [(ngModel)]="flashcardSetName"
+        placeholder="Enter a name for this group of flashcards"
+        maxlength="60"
+        required
+        [disabled]="savingSelectedFlashcards"
+      >
+      <div *ngIf="saveFlashcardsError" class="modal-error">{{ saveFlashcardsError }}</div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-submit" type="button" (click)="saveSelectedFlashcards()" [disabled]="!canSubmitSaveFlashcards">
+        {{ savingSelectedFlashcards ? 'Saving...' : 'Save' }}
+      </button>
+      <button class="modal-cancel" type="button" (click)="closeSaveFlashcardsModal()" [disabled]="savingSelectedFlashcards">
+        Cancel
+      </button>
+      
     </div>
   </div>
 </div>

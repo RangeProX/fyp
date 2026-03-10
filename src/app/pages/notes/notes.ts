@@ -26,7 +26,7 @@ export class Notes {
   uploadVisibility: 'PRIVATE' | 'PUBLIC' = 'PRIVATE';
   uploadFileType: 'NOTES' | 'PAST_YEAR_PAPER' = 'NOTES';
   isDragOver = false;
-  questionsForm = { count: 8, difficulty: 'medium', type: 'mixed' };
+  questionsForm = { count: 8, difficulty: 'medium', type: 'mcq' };
   flashcardsForm = { count: 12, difficulty: 'medium' };
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild(NotesList) notesList!: NotesList;
@@ -325,17 +325,17 @@ export class Notes {
     const payload: {
       count?: number;
       difficulty?: 'easy' | 'medium' | 'hard';
-      type?: 'mcq' | 'short' | 'essay' | 'mixed';
+      type?: 'mcq' | 'short' | 'essay';
     } = {};
 
     if (action === 'questions') {
       const count = Math.min(Math.max(Math.round(Number(this.questionsForm.count) || 8), 3), 20);
       this.questionsForm.count = count;
       this.questionsForm.difficulty = this.questionsForm.difficulty || 'medium';
-      this.questionsForm.type = this.questionsForm.type || 'mixed';
+      this.questionsForm.type = this.questionsForm.type || 'mcq';
       payload.count = count;
       payload.difficulty = this.questionsForm.difficulty as 'easy' | 'medium' | 'hard';
-      payload.type = this.questionsForm.type as 'mcq' | 'short' | 'essay' | 'mixed';
+      payload.type = this.questionsForm.type as 'mcq' | 'short' | 'essay';
     } else if (action === 'flashcards') {
       const count = Math.min(Math.max(Math.round(Number(this.flashcardsForm.count) || 12), 5), 30);
       this.flashcardsForm.count = count;

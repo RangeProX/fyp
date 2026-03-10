@@ -10,8 +10,8 @@ const AI_REQUEST_TIMEOUT_MS = Number.isFinite(Number(process.env.AI_REQUEST_TIME
   && Number(process.env.AI_REQUEST_TIMEOUT_MS) > 0
   ? Math.floor(Number(process.env.AI_REQUEST_TIMEOUT_MS))
   : 45_000;
-const ALLOWED_DIFFICULTIES = new Set(['easy', 'medium', 'hard', 'mixed']);
-const ALLOWED_QUESTION_TYPES = new Set(['mcq', 'short', 'essay', 'mixed']);
+const ALLOWED_DIFFICULTIES = new Set(['easy', 'medium', 'hard']);
+const ALLOWED_QUESTION_TYPES = new Set(['mcq', 'short', 'essay']);
 
 let anthropicClient = null;
 
@@ -204,28 +204,33 @@ const requestClaudeJson = async ({ taskPrompt, context, maxTokens = 1500 }) => {
     const count = Number(prompt.match(/Create\s+(\d+)/i)?.[1]) || 8;
 
     if (lowerPrompt.includes('flashcards')) {
+      const parsedDifficulty =
+        lowerPrompt.match(/create\s+\d+\s+(easy|medium|hard)\s+difficulty\s+flashcards/i)?.[1]
+        || 'medium';
+
       return {
         data: {
-          flashcards: Array.from({ length: count }, (_, index) => ({
-            front: `Mock flashcard ${index + 1}: What is a key idea from this topic?`,
-            back: `Mock answer ${index + 1}: This is a concise explanation for revision practice.`,
-          })),
+          flashcards: Array.from({ length: count }, (_, index) => {
+            const difficulty = parsedDifficulty;
+
+            return {
+              front: `Mock flashcard ${index + 1} of difficulty: ${difficulty}: What is a key idea from this topic?`,
+              back: `Mock answer ${index + 1}: This is a concise explanation for revision practice.`,
+            };
+          }),
         },
       };
     }
 
     if (lowerPrompt.includes('study questions') || lowerPrompt.includes(' questions from the source content')) {
-      const parsedType = lowerPrompt.match(/difficulty\s+(mcq|short|essay|mixed)\s+(?:study\s+)?questions/i)?.[1] || 'mixed';
-      const parsedDifficulty = lowerPrompt.match(/create\s+\d+\s+(easy|medium|hard|mixed)\s+difficulty/i)?.[1] || 'medium';
-
-      const types = parsedType === 'mixed' ? ['mcq', 'short', 'essay'] : [parsedType];
-      const difficulties = parsedDifficulty === 'mixed' ? ['easy', 'medium', 'hard'] : [parsedDifficulty];
+      const parsedType = lowerPrompt.match(/difficulty\s+(mcq|short|essay)\s+(?:study\s+)?questions/i)?.[1] || 'mcq';
+      const parsedDifficulty = lowerPrompt.match(/create\s+\d+\s+(easy|medium|hard)\s+difficulty/i)?.[1] || 'medium';
 
       return {
         data: {
           questions: Array.from({ length: count }, (_, index) => {
-            const type = types[index % types.length];
-            const difficulty = difficulties[index % difficulties.length];
+            const type = parsedType;
+            const difficulty = parsedDifficulty;
             const baseQuestion = {
               question: `Mock ${type} question ${index + 1}: Explain the main concept from the provided files.`,
               answer:
@@ -392,7 +397,7 @@ export const generateQuestions = async (req, res) => {
   const questionTypeValidation = parseOptionalEnum({
     rawValue: body.type ?? body.questionType,
     allowedValues: ALLOWED_QUESTION_TYPES,
-    defaultValue: 'mixed',
+    defaultValue: 'mcq',
     fieldName: 'type',
   });
 
@@ -410,7 +415,7 @@ export const generateQuestions = async (req, res) => {
     () => {
       let typeInstructions = '';
 
-      if (questionType === 'mcq' || questionType === 'mixed') {
+      if (questionType === 'mcq') {
         typeInstructions += `
 For multiple choice questions (MCQ):
 - Provide 4 options labeled A, B, C, D
@@ -418,14 +423,14 @@ For multiple choice questions (MCQ):
 - Make distractors plausible but clearly wrong`;
       }
 
-      if (questionType === 'short' || questionType === 'mixed') {
+      if (questionType === 'short') {
         typeInstructions += `
 For short answer questions:
 - Questions that can be answered in 2-3 sentences
 - Provide concise, factual answers`;
       }
 
-      if (questionType === 'essay' || questionType === 'mixed') {
+      if (questionType === 'essay') {
         typeInstructions += `
 For essay questions:
 - Questions requiring detailed explanation
@@ -438,7 +443,6 @@ Difficulty guidelines:
 - easy: Basic recall and understanding questions
 - medium: Application and analysis questions
 - hard: Synthesis and evaluation questions
-- mixed: Variety of all difficulty levels
 
 ${typeInstructions}
 
@@ -501,7 +505,6 @@ Difficulty guidelines:
 - easy: Focus on core facts and direct definitions
 - medium: Include conceptual links and common applications
 - hard: Emphasize nuanced distinctions and advanced reasoning
-- mixed: Use a balanced mix of all levels
 
     Return JSON with this exact shape: {"flashcards":[{"front":"...","back":"..."}]}
 
