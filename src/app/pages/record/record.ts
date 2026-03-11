@@ -2,11 +2,12 @@ import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-record',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './record.html',
   styleUrl: './record.css',
 })
@@ -22,6 +23,8 @@ export class Record implements OnDestroy {
   focusLevel = 1;
   progress = '';
   pausedCount = 0;
+  sessionStartedAt: string | null = null;
+  sessionEndedAt: string | null = null;
 
   isSubmitting = false;
   submitError = '';
@@ -43,6 +46,8 @@ export class Record implements OnDestroy {
     this.isSessionActive = true;
     this.isPaused = false;
     this.elapsedSeconds = 0;
+    this.sessionStartedAt = new Date().toISOString();
+    this.sessionEndedAt = null;
 
     this.timerInterval = setInterval(() => {
       this.elapsedSeconds++;
@@ -77,12 +82,18 @@ export class Record implements OnDestroy {
     this.isPaused = false;
     clearInterval(this.timerInterval);
     this.timerInterval = null;
+    this.sessionEndedAt = new Date().toISOString();
     this.completedDuration = this.formatTime(this.elapsedSeconds);
     this.isEndSessionModalOpen = true;
     this.cdr.markForCheck();
   }
 
   submitSessionDetails() {
+    const endedAt = this.sessionEndedAt ?? new Date().toISOString();
+    const startedAt = this.sessionStartedAt
+      ? this.sessionStartedAt
+      : new Date(new Date(endedAt).getTime() - (this.elapsedSeconds * 1000)).toISOString();
+
     const payload = {
       sessionTitle: this.subject,
       durationSeconds: this.elapsedSeconds,
@@ -91,6 +102,8 @@ export class Record implements OnDestroy {
       remarks: this.remarks,
       progress: this.progress,
       pausedCount: this.pausedCount,
+      startedAt,
+      endedAt,
     };
 
     this.isSubmitting = true;
@@ -128,6 +141,8 @@ export class Record implements OnDestroy {
     this.focusLevel = 1;
     this.progress = '';
     this.pausedCount = 0;
+    this.sessionStartedAt = null;
+    this.sessionEndedAt = null;
     this.cdr.markForCheck();
   }
 

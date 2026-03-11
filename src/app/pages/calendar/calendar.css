@@ -83,6 +83,175 @@ full-calendar {
   border-color: #3b82f6;
 }
 
+.modal-field .field-text {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d5dbe7;
+  background: #f8fafc;
+  font-size: 14px;
+  color: #0f1219;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+}
+
+.modal-field .field-text.multiline {
+  min-height: 92px;
+  align-items: flex-start;
+  white-space: pre-wrap;
+}
+
+.modal-field input[type="color"] {
+  width: 56px;
+  min-width: 56px;
+  height: 42px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.color-input-row,
+.color-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-value {
+  font-size: 14px;
+  color: #0f1219;
+}
+
+.color-display {
+  min-height: 42px;
+  padding: 0 2px;
+  color: #0f1219;
+  font-size: 14px;
+}
+
+.color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 18, 25, 0.12);
+  flex: 0 0 auto;
+}
+
+/* Recurrence controls */
+.recurrence-toggle {
+  margin-top: 6px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #0f1219;
+  cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.recurrence-options {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f7f8fc;
+  border: 1px solid #e2e5ef;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.recurrence-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.recurrence-sub-label {
+  font-size: 13px;
+  color: #555e76;
+  min-width: 78px;
+  flex-shrink: 0;
+}
+
+.recurrence-sub-label .required-mark {
+  color: #b42318;
+  margin-left: 2px;
+}
+
+.recurrence-options select,
+.recurrence-options input[type="date"] {
+  flex: 1;
+  border: 1.5px solid #d0d5e8;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 14px;
+  color: #0f1219;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.recurrence-options select:focus,
+.recurrence-options input[type="date"]:focus {
+  border-color: #4f46e5;
+}
+
+/* Details-mode recurrence info */
+.recurrence-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.recurrence-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recurrence-badge {
+  display: inline-block;
+  background: #eef2ff;
+  color: #4f46e5;
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.recurrence-info-end {
+  font-size: 13px;
+  color: #555e76;
+  margin: 0;
+}
+
+.edit-series-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.edit-series-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -127,4 +296,81 @@ full-calendar {
 .btn.danger:disabled {
   background: #e2a6a1;
   cursor: not-allowed;
+}
+
+.delete-confirm-card {
+  width: min(420px, 100%);
+}
+
+.delete-confirm-text {
+  margin: 0;
+  font-size: 14px;
+  color: #374151;
+}
+
+.delete-series-toggle {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.delete-series-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #b42318;
+}
+
+:host ::ng-deep .fc .fc-daygrid-event {
+  min-height: 34px;
+  font-size: 14px;
+}
+
+:host ::ng-deep .fc .fc-daygrid-block-event .fc-event-main {
+  padding: 6px 8px;
+}
+
+:host ::ng-deep .fc .fc-daygrid-day-frame {
+  min-height: 120px;
+}
+
+:host ::ng-deep .fc .fc-daygrid-day-events {
+  margin-top: 4px;
+}
+
+:host ::ng-deep .fc .fc-daygrid-day-events .fc-daygrid-event-harness {
+  margin-bottom: 6px;
+}
+
+:host ::ng-deep .fc .fc-daygrid-day-events .fc-daygrid-event-harness:last-child {
+  margin-bottom: 0;
+}
+
+:host ::ng-deep .fc .fc-daygrid-event .fc-event-main-frame {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+:host ::ng-deep .fc .fc-daygrid-event .fc-event-time {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  font-weight: 700;
+  line-height: 1.25;
+  font-size: 14px;
+}
+
+:host ::ng-deep .fc .fc-daygrid-event .fc-event-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+  font-size: 14px;
 }

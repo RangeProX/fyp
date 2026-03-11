@@ -50,6 +50,15 @@ button {
     margin: 0 auto;
 }
 
+.back {
+    background-color: #ff0000;
+}
+
+.back:hover {
+    background-color: #ff4d4d;
+
+}
+
 button:hover {
     background-color: #61c8ff;
 }

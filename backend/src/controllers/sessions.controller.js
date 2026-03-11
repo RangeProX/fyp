@@ -18,6 +18,88 @@ const parseNonNegativeInt = (value) => {
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
 };
 
+const parseDateValue = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const buildSessionEventNotes = ({ goals, remarks, progress, pausedCount, focusLevel, durationSeconds }) => {
+  const sections = ['Recorded study session'];
+
+  if (goals) {
+    sections.push(`Goals: ${String(goals).trim()}`);
+  }
+
+  if (progress) {
+    sections.push(`Progress: ${String(progress).trim()}`);
+  }
+
+  if (remarks) {
+    sections.push(`Remarks: ${String(remarks).trim()}`);
+  }
+
+  if (durationSeconds !== undefined) {
+    const totalSeconds = Math.max(0, Number(durationSeconds) || 0);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    sections.push(
+      `Tracked duration: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    );
+  }
+
+  if (focusLevel !== undefined) {
+    sections.push(`Focus level: ${focusLevel}/5`);
+  }
+
+  if (pausedCount !== undefined) {
+    sections.push(`Paused ${pausedCount} time${Number(pausedCount) === 1 ? '' : 's'}`);
+  }
+
+  return sections.join('\n\n');
+};
+
+const buildSessionEventData = ({
+  sessionTitle,
+  startedAt,
+  endedAt,
+  goals,
+  remarks,
+  progress,
+  pausedCount,
+  focusLevel,
+  durationSeconds,
+}) => ({
+  title: String(sessionTitle).trim(),
+  startTime: startedAt,
+  endTime: endedAt,
+  notes: buildSessionEventNotes({ goals, remarks, progress, pausedCount, focusLevel, durationSeconds }),
+  visibility: 'PRIVATE',
+});
+
+const createCalendarEventForSession = async (tx, userId, sessionData) => {
+  const event = await tx.event.create({
+    data: {
+      ...buildSessionEventData(sessionData),
+      ownerId: userId,
+    },
+  });
+
+  await tx.eventPermission.create({
+    data: {
+      eventId: event.id,
+      userId,
+      role: 'owner',
+    },
+  });
+
+  return event;
+};
+
 const applySessionInsight = async (session, { force = false } = {}) => {
   const evaluation = evaluateSessionInsightConditions(session, { force });
 
@@ -56,6 +138,8 @@ export const createSession = async (req, res) => {
     remarks,
     progress,
     pausedCount,
+    startedAt,
+    endedAt,
   } = req.body || {};
 
   if (!userId) {
@@ -69,6 +153,8 @@ export const createSession = async (req, res) => {
   const parsedDuration = parseNonNegativeInt(durationSeconds);
   const parsedFocus = Number(focusLevel);
   const parsedPausedCount = pausedCount === undefined ? 0 : parseNonNegativeInt(pausedCount);
+  const parsedEndedAt = parseDateValue(endedAt) ?? new Date();
+  const parsedStartedAt = parseDateValue(startedAt) ?? new Date(parsedEndedAt.getTime() - ((parsedDuration ?? 0) * 1000));
 
   if (parsedDuration === null) {
     return res.status(400).json({ message: 'durationSeconds must be a non-negative integer.' });
@@ -82,18 +168,45 @@ export const createSession = async (req, res) => {
     return res.status(400).json({ message: 'pausedCount must be a non-negative integer.' });
   }
 
+  if (!parsedStartedAt || !parsedEndedAt || parsedEndedAt <= parsedStartedAt) {
+    return res.status(400).json({ message: 'A valid session start and end time are required.' });
+  }
+
   try {
-    const session = await prisma.session.create({
-      data: {
-        userId,
-        sessionTitle: String(sessionTitle).trim(),
-        durationSeconds: parsedDuration,
-        focusLevel: parsedFocus,
-        goals: goals ?? null,
-        remarks: remarks ?? null,
-        progress: progress ?? null,
-        pausedCount: parsedPausedCount,
-      },
+    const session = await prisma.$transaction(async (tx) => {
+      const created = await tx.session.create({
+        data: {
+          userId,
+          sessionTitle: String(sessionTitle).trim(),
+          durationSeconds: parsedDuration,
+          focusLevel: parsedFocus,
+          goals: goals ?? null,
+          remarks: remarks ?? null,
+          progress: progress ?? null,
+          pausedCount: parsedPausedCount,
+          startedAt: parsedStartedAt,
+          endedAt: parsedEndedAt,
+        },
+      });
+
+      const calendarEvent = await createCalendarEventForSession(tx, userId, {
+        sessionTitle: created.sessionTitle,
+        startedAt: parsedStartedAt,
+        endedAt: parsedEndedAt,
+        goals: created.goals,
+        remarks: created.remarks,
+        progress: created.progress,
+        pausedCount: created.pausedCount,
+        focusLevel: created.focusLevel,
+        durationSeconds: created.durationSeconds,
+      });
+
+      return tx.session.update({
+        where: { sessionId: created.sessionId },
+        data: {
+          calendarEventId: calendarEvent.id,
+        },
+      });
     });
 
     const sessionWithInsight = await applySessionInsight(session);
@@ -169,6 +282,8 @@ export const updateSession = async (req, res) => {
     remarks,
     progress,
     pausedCount,
+    startedAt,
+    endedAt,
   } = req.body || {};
 
   if (!userId) {
@@ -192,6 +307,16 @@ export const updateSession = async (req, res) => {
     }
 
     const updateData = {};
+    const parsedStartedAt = startedAt !== undefined ? parseDateValue(startedAt) : existing.startedAt;
+    const parsedEndedAt = endedAt !== undefined ? parseDateValue(endedAt) : existing.endedAt;
+
+    if ((startedAt !== undefined && !parsedStartedAt) || (endedAt !== undefined && !parsedEndedAt)) {
+      return res.status(400).json({ message: 'Invalid session start or end time.' });
+    }
+
+    if (parsedStartedAt && parsedEndedAt && parsedEndedAt <= parsedStartedAt) {
+      return res.status(400).json({ message: 'Session end time must be after session start time.' });
+    }
 
     if (sessionTitle !== undefined) {
       updateData.sessionTitle = String(sessionTitle).trim();
@@ -233,10 +358,38 @@ export const updateSession = async (req, res) => {
       updateData.progress = progress;
     }
 
+    if (startedAt !== undefined) {
+      updateData.startedAt = parsedStartedAt;
+    }
+
+    if (endedAt !== undefined) {
+      updateData.endedAt = parsedEndedAt;
+    }
+
     const updated = await prisma.session.update({
       where: { sessionId },
       data: updateData,
     });
+
+    if (existing.calendarEventId) {
+      await prisma.event.updateMany({
+        where: {
+          id: existing.calendarEventId,
+          ownerId: existing.userId,
+        },
+        data: buildSessionEventData({
+          sessionTitle: updated.sessionTitle,
+          startedAt: updated.startedAt ?? existing.startedAt ?? updated.createdAt,
+          endedAt: updated.endedAt ?? existing.endedAt ?? updated.createdAt,
+          goals: updated.goals,
+          remarks: updated.remarks,
+          progress: updated.progress,
+          pausedCount: updated.pausedCount,
+          focusLevel: updated.focusLevel,
+          durationSeconds: updated.durationSeconds,
+        }),
+      });
+    }
 
     res.json(updated);
   } catch (error) {
@@ -269,7 +422,23 @@ export const deleteSession = async (req, res) => {
       return res.status(403).json({ message: 'Not allowed to delete this session.' });
     }
 
-    await prisma.session.delete({ where: { sessionId } });
+    await prisma.$transaction(async (tx) => {
+      if (existing.calendarEventId) {
+        await tx.eventPermission.deleteMany({
+          where: { eventId: existing.calendarEventId },
+        });
+
+        await tx.event.deleteMany({
+          where: {
+            id: existing.calendarEventId,
+            ownerId: existing.userId,
+          },
+        });
+      }
+
+      await tx.session.delete({ where: { sessionId } });
+    });
+
     res.json({ message: 'Session deleted.' });
   } catch (error) {
     console.error('Delete session error:', error);

@@ -1,4 +1,5 @@
 <section class="sessions-list">
+  <h2>Study Sessions</h2>
   <div class="actions">
     <button type="button" routerLink="/record">Record Session</button>
   </div>
@@ -30,14 +31,41 @@
       <p><strong>Progress:</strong> {{ selectedSession.progress || '-' }}</p>
       <p><strong>Paused:</strong> {{ selectedSession.pausedCount }} times</p>
       <p><strong>Saved:</strong> {{ selectedSession.createdAt | date:'medium' }}</p>
-      <p><strong>AI Insight:</strong> {{ selectedSession.aiInsight || '-' }}</p>
-      <p><strong>Insight Status:</strong> {{ formatInsightStatus(selectedSession.aiInsightStatus) }}</p>
-      <p *ngIf="selectedSession.aiInsightReason"><strong>Insight Note:</strong> {{ selectedSession.aiInsightReason }}</p>
-      <p *ngIf="selectedSession.aiInsightGeneratedAt"><strong>Generated:</strong> {{ selectedSession.aiInsightGeneratedAt | date:'medium' }}</p>
+
+      <hr>
+      <div class="insight-section">
+        <div *ngIf="selectedSession.aiInsightStatus === 'generated' && selectedSession.aiInsight" class="insight-box generated">
+          <h4>✨ AI Insight</h4>
+          <p class="insight-text">{{ selectedSession.aiInsight }}</p>
+          <small class="timestamp">Generated: {{ selectedSession.aiInsightGeneratedAt | date:'medium' }}</small>
+        </div>
+
+        <div *ngIf="selectedSession.aiInsightStatus === 'skipped'" class="insight-box skipped">
+          <h4>ℹ️ No Insight Generated</h4>
+          <p class="reason">{{ selectedSession.aiInsightReason }}</p>
+          <button
+            type="button"
+            class="generate-button small"
+            [disabled]="isGeneratingInsight"
+            (click)="generateInsight(selectedSession.sessionId)">
+            {{ isGeneratingInsight ? 'Generating...' : 'Try Generate Anyway' }}
+          </button>
+        </div>
+
+        <div *ngIf="!selectedSession.aiInsightStatus || selectedSession.aiInsightStatus === 'none'" class="insight-box none">
+          <h4>💡 Generate AI Insight</h4>
+          <p>Get personalized study tips based on this session</p>
+          <button
+            type="button"
+            class="generate-button"
+            [disabled]="isGeneratingInsight"
+            (click)="generateInsight(selectedSession.sessionId)">
+            {{ isGeneratingInsight ? 'Generating...' : 'Generate Insight' }}
+          </button>
+        </div>
+      </div>
+
       <div class="modal-actions">
-        <button type="button" class="generate-button" [disabled]="isGeneratingInsight" (click)="generateInsight(selectedSession.sessionId)">
-          {{ isGeneratingInsight ? 'Generating...' : 'Generate Insight' }}
-        </button>
         <button type="button" class="delete-button" (click)="deleteSession(selectedSession.sessionId)">Delete</button>
         <button type="button" class="close-button" (click)="closeSessionDetails()">Close</button>
       </div>

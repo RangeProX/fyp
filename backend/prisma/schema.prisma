@@ -71,20 +71,25 @@ model FilePermission {
 }
 
 model Event {
-  id         String           @id @default(cuid())
-  title      String
-  startTime  DateTime         @map("start_time")
-  endTime    DateTime         @map("end_time")
-  notes      String?          @map("notes")
-  visibility EventVisibility  @default(PRIVATE)
-  ownerId    Int              @map("owner_id")
-  createdAt  DateTime?        @default(now()) @map("created_at")
-  updatedAt  DateTime?        @updatedAt @map("updated_at")
+  id                String           @id @default(cuid())
+  title             String
+  startTime         DateTime         @map("start_time")
+  endTime           DateTime         @map("end_time")
+  notes             String?          @map("notes")
+  color             String           @default("#3788d8") @map("color")
+  visibility        EventVisibility  @default(PRIVATE)
+  rrule             String?          @map("rrule")
+  exdates           String?          @map("exdates")
+  seriesId          String?          @map("series_id")
+  ownerId           Int              @map("owner_id")
+  createdAt         DateTime?        @default(now()) @map("created_at")
+  updatedAt         DateTime?        @updatedAt @map("updated_at")
 
   owner       UserAuth          @relation(fields: [ownerId], references: [id])
   permissions EventPermission[]
 
   @@index([ownerId])
+  @@index([seriesId])
   @@map("events")
 }
 
@@ -121,6 +126,9 @@ model Session {
   remarks         String?
   progress        String?
   pausedCount     Int       @default(0) @map("paused_count")
+  startedAt       DateTime? @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+  calendarEventId String?   @unique @map("calendar_event_id")
   aiInsightStatus String    @default("none") @map("ai_insight_status")
   aiInsight       String?   @map("ai_insight")
   aiInsightReason String?   @map("ai_insight_reason")

@@ -5,25 +5,107 @@
 
 	<full-calendar [options]="calendarOptions"></full-calendar>
 
+	<!-- Modal for adding/editing events -->
 	<div class="modal-backdrop" *ngIf="isModalOpen" (click)="closeModal()">
 		<div class="modal-card" role="dialog" aria-modal="true" aria-label="Add event" (click)="$event.stopPropagation()">
 			<h2 class="modal-title">{{ isDetailsMode ? 'Event details' : 'Add event' }}</h2>
 			<div class="modal-body">
 				<label class="modal-field">
 					<span>Title</span>
-					<input type="text" [(ngModel)]="draftTitle" (ngModelChange)="validateDraft()" placeholder="Title" [readonly]="isDetailsMode" />
+					<ng-container *ngIf="isDetailsMode && !isEditingDetails; else titleInput">
+						<p class="field-text">{{ draftTitle || '-' }}</p>
+					</ng-container>
+					<ng-template #titleInput>
+						<input type="text" [(ngModel)]="draftTitle" (ngModelChange)="validateDraft()" placeholder="Title" />
+					</ng-template>
 				</label>
 				<label class="modal-field">
 					<span>Start</span>
-					<input type="datetime-local" [(ngModel)]="draftStart" (ngModelChange)="validateDraft()" [disabled]="isDetailsMode" />
+					<input type="datetime-local" [(ngModel)]="draftStart" (ngModelChange)="validateDraft()" [disabled]="isDetailsMode && !isEditingDetails" />
 				</label>
 				<label class="modal-field">
 					<span>End</span>
-					<input type="datetime-local" [(ngModel)]="draftEnd" (ngModelChange)="validateDraft()" [disabled]="isDetailsMode" />
+					<input type="datetime-local" [(ngModel)]="draftEnd" (ngModelChange)="validateDraft()" [disabled]="isDetailsMode && !isEditingDetails" />
 				</label>
 				<label class="modal-field">
 					<span>Notes</span>
-					<textarea [(ngModel)]="draftNotes" (ngModelChange)="validateDraft()" placeholder="Additional notes" [readonly]="isDetailsMode"></textarea>
+					<ng-container *ngIf="isDetailsMode && !isEditingDetails; else notesInput">
+						<p class="field-text multiline">{{ draftNotes || '-' }}</p>
+					</ng-container>
+					<ng-template #notesInput>
+						<textarea [(ngModel)]="draftNotes" (ngModelChange)="validateDraft()" placeholder="Additional notes"></textarea>
+					</ng-template>
+				</label>
+				<label class="modal-field">
+					<span>Colour</span>
+					<ng-container *ngIf="isDetailsMode && !isEditingDetails; else colorInput">
+						<div class="color-display">
+							<span class="color-swatch" [style.backgroundColor]="draftColor"></span>
+							<span>{{ draftColor }}</span>
+						</div>
+					</ng-container>
+					<ng-template #colorInput>
+						<div class="color-input-row">
+							<input type="color" [(ngModel)]="draftColor" />
+							<span class="color-value">{{ draftColor }}</span>
+						</div>
+					</ng-template>
+				</label>
+
+				<!-- Recurrence: create mode only -->
+				<div class="modal-field" *ngIf="!isDetailsMode">
+					<span>Recurring event</span>
+					<div class="recurrence-toggle">
+						<label class="toggle-label">
+							<input
+								type="checkbox"
+								[(ngModel)]="draftIsRecurring"
+								(ngModelChange)="validateDraft()"
+							/>
+							<span>Repeat this event</span>
+						</label>
+					</div>
+					<ng-container *ngIf="draftIsRecurring">
+						<div class="recurrence-options">
+							<div class="recurrence-row">
+								<label class="recurrence-sub-label">Repeat</label>
+								<select [(ngModel)]="draftRecurrenceFreq" (ngModelChange)="validateDraft()">
+									<option value="daily">Daily</option>
+									<option value="weekly">Weekly</option>
+									<option value="monthly">Monthly</option>
+								</select>
+							</div>
+							<div class="recurrence-row">
+								<label class="recurrence-sub-label" for="recurrenceEnd">End date <span class="required-mark">*</span></label>
+								<input
+									type="date"
+									id="recurrenceEnd"
+									[(ngModel)]="draftRecurrenceEnd"
+									(ngModelChange)="validateDraft()"
+								/>
+							</div>
+						</div>
+					</ng-container>
+				</div>
+
+				<!-- Recurrence: details mode read-only -->
+				<div class="modal-field" *ngIf="isDetailsMode && detailsRruleFreq">
+					<span>Recurrence</span>
+					<div class="recurrence-info-block">
+						<div class="recurrence-info-row">
+							<span class="recurrence-badge">
+								{{ detailsRruleFreq === 'daily' ? 'Daily' : detailsRruleFreq === 'weekly' ? 'Weekly' : detailsRruleFreq === 'monthly' ? 'Monthly' : 'Part of recurring series' }}
+							</span>
+						</div>
+						<p class="recurrence-info-end" *ngIf="detailsRruleUntil && detailsRruleFreq !== 'series-member'">
+							Ends {{ detailsRruleUntil | date:'mediumDate' }}
+						</p>
+					</div>
+				</div>
+
+				<label class="edit-series-toggle" *ngIf="isDetailsMode && isEditingDetails && detailsRruleFreq">
+					<input type="checkbox" [(ngModel)]="editAllRecurringInSeries" [disabled]="isSavingEdit || isDeleting" />
+					<span>Edit all events in this recurring series</span>
 				</label>
 			</div>
 			<p class="modal-error" *ngIf="message">{{ message }}</p>
@@ -32,12 +114,37 @@
 					*ngIf="isDetailsMode"
 					type="button"
 					class="btn danger"
-					(click)="deleteSelectedEvent()"
-					[disabled]="isDeleting"
+					(click)="openDeleteConfirmModal()"
+					[disabled]="isDeleting || isSavingEdit"
 				>
 					{{ isDeleting ? 'Deleting...' : 'Delete' }}
 				</button>
-				<button type="button" class="btn ghost" (click)="closeModal()">{{ isDetailsMode ? 'Close' : 'Cancel' }}</button>
+				<button
+					type="button"
+					class="btn ghost"
+					(click)="isDetailsMode && isEditingDetails ? cancelEditingDetails() : closeModal()"
+					[disabled]="isSavingEdit"
+				>
+					{{ isDetailsMode ? (isEditingDetails ? 'Cancel' : 'Close') : 'Cancel' }}
+				</button>
+				<button
+					*ngIf="isDetailsMode && !isEditingDetails"
+					type="button"
+					class="btn primary"
+					(click)="startEditingDetails()"
+					[disabled]="isDeleting || isSavingEdit"
+				>
+					Edit
+				</button>
+				<button
+					*ngIf="isDetailsMode && isEditingDetails"
+					type="button"
+					class="btn primary"
+					(click)="saveEvent()"
+					[disabled]="isSavingEdit || isDeleting"
+				>
+					{{ isSavingEdit ? 'Saving...' : 'Save changes' }}
+				</button>
 				<button
 					*ngIf="!isDetailsMode"
 					type="button"
@@ -45,6 +152,28 @@
 					(click)="saveEvent()"
 				>
 					Save event
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Delete confirmation modal -->
+	<div class="modal-backdrop" *ngIf="isDeleteConfirmOpen" (click)="closeDeleteConfirmModal()">
+		<div class="modal-card delete-confirm-card" role="dialog" aria-modal="true" aria-label="Confirm delete" (click)="$event.stopPropagation()">
+			<h2 class="modal-title">Confirm delete</h2>
+			<p class="delete-confirm-text">Are you sure you want to delete this event?</p>
+
+			<label class="delete-series-toggle" *ngIf="detailsRruleFreq">
+				<input type="checkbox" [(ngModel)]="deleteAllRecurringInSeries" [disabled]="isDeleting" />
+				<span>Delete all events in this recurring series</span>
+			</label>
+
+			<div class="modal-actions">
+				<button type="button" class="btn ghost" (click)="closeDeleteConfirmModal()" [disabled]="isDeleting">
+					Cancel
+				</button>
+				<button type="button" class="btn danger" (click)="deleteSelectedEvent()" [disabled]="isDeleting">
+					{{ isDeleting ? 'Deleting...' : 'Delete' }}
 				</button>
 			</div>
 		</div>

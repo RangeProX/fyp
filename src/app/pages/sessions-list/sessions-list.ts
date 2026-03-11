@@ -12,6 +12,9 @@ type SessionItem = {
   focusLevel: number;
   progress?: string | null;
   pausedCount: number;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  calendarEventId?: string | null;
   aiInsightStatus?: string;
   aiInsight?: string | null;
   aiInsightReason?: string | null;
