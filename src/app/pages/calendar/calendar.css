@@ -11,6 +11,8 @@ full-calendar {
 .calendar-toolbar {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 12px;
 }
 
@@ -286,6 +288,12 @@ full-calendar {
 .btn.ghost {
   background: #eef2f7;
   color: #1f2937;
+}
+
+.btn.ghost:disabled {
+  background: #dbe3ee;
+  color: #6b7280;
+  cursor: not-allowed;
 }
 
 .btn.danger {

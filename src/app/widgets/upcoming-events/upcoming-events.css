@@ -21,26 +21,18 @@
   line-height: 1.2;
 }
 
-.date-selector {
-  background-color: #e9eeea;
-  border-radius: 9999px;
-  padding: 0.7rem 1.2rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid #d0d0ce;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  display: flex;
-  align-items: center;
+.state-text {
+  margin: 0;
+  padding: 12px 10px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: #334155;
+  font-size: 0.92rem;
+  text-align: center;
 }
 
-.date-selector span {
-  font-size: 1rem;
-  font-weight: 500;
-  margin-right: 0.5rem;
-}
-
-.date-selector:hover {
-  background-color: #dededd;
+.state-text.error {
+  color: #b42318;
 }
 
 .calls-info {
@@ -60,26 +52,35 @@
   padding: 8px 6px;
   margin-bottom: 16px;
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
 }
 
 .day-item {
-  min-width: 44px;
-  height: 40px;
-  border-radius: 22px;
+  min-width: calc(50% - 8px);
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  justify-content: flex-start;
+  align-items: flex-start;
   background-color: transparent;
   transition: all 0.2s ease;
+  padding: 8px;
+  margin: 0;
+  border: 1px solid #eef2f7;
+  text-align: left;
   cursor: pointer;
-  padding: 4px 6px;
-  margin: 0 1px;
+  font: inherit;
 }
 
 .day-item:hover {
   background-color: #f8f8f8;
+}
+
+.day-item:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
 
 .day-active {
@@ -87,54 +88,31 @@
 }
 
 .day-number {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.1;
 }
 
 .day-name {
   font-size: 0.7rem;
-  margin-top: 1px;
+  margin-top: 2px;
   color: #666;
 }
 
-.indicator-container {
-  position: relative;
+.event-title {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 0.5rem;
-  margin-top: 0.5rem;
 }
 
-.indicator-dot {
-  height: 8px;
-  width: 8px;
-  border-radius: 50%;
-  background-color: #d0d0ce;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  z-index: 2;
-}
-
-.indicator-dot:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 8px;
-  width: calc(100% + 45px);
-  height: 1px;
-  border-top: 1.5px dashed #d0d0ce;
-  transform: translateY(-50%);
-  z-index: 1;
-}
-
-.indicator-dot:hover {
-  background-color: #b0b0ae;
-}
-
-.indicator-active {
-  background-color: #000;
+.event-time {
+  margin-top: 4px;
+  font-size: 0.76rem;
+  color: #475569;
 }

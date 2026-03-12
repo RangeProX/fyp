@@ -12,7 +12,12 @@ if (lowerArgs.includes('dev') || lowerArgs.includes('development')) {
 }
 
 const passthroughArgs = rawArgs.filter((arg) => arg.startsWith('-'));
-const ngArgs = ['ng', 'serve', 'fyp', '--configuration', configuration, ...passthroughArgs];
+const hasPrebundleFlag = passthroughArgs.some((arg) => arg.startsWith('--prebundle'));
+const stableWindowsArgs = process.platform === 'win32' && !hasPrebundleFlag
+  ? ['--prebundle=false']
+  : [];
+
+const ngArgs = ['ng', 'serve', 'fyp', '--configuration', configuration, ...stableWindowsArgs, ...passthroughArgs];
 
 const command = 'npx';
 const child = spawn(command, ngArgs, {

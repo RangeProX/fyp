@@ -19,6 +19,7 @@ model UserAuth {
   eventPermissions EventPermission[] @relation("UserEventPermissions")
   sessions    Session[]
   savedFlashcards SavedFlashcard[]
+  calendarInsights CalendarInsight[]
 
   @@map("users_auth")
 }
@@ -153,4 +154,28 @@ model SavedFlashcard {
 
   @@index([userId])
   @@map("saved_flashcards")
+}
+
+model CalendarInsight {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  
+  observation     String
+  concern         String?
+  suggestion      String
+  encouragement   String
+  urgentActions   String?
+  
+  generatedAt     DateTime @default(now()) @map("generated_at")
+  validUntil      DateTime @map("valid_until")
+  
+  eventsAnalyzed  Int      @map("events_analyzed")
+  timeWindowStart DateTime @map("time_window_start")
+  timeWindowEnd   DateTime @map("time_window_end")
+  
+  user            UserAuth @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([generatedAt])
+  @@map("calendar_insights")
 }

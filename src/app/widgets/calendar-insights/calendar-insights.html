@@ -1,0 +1,72 @@
+<div class="calendar-insights-widget">
+	<h2>Weekly Insights</h2>
+
+	<div *ngIf="isLoading" class="loading-state">
+		<p>Loading insights...</p>
+	</div>
+
+	<div *ngIf="error && !isLoading" class="error-state">
+		<p>{{ error }}</p>
+		<button class="retry-btn" (click)="loadInsightStatus()">Retry</button>
+	</div>
+
+	<div *ngIf="!isLoading && !error && staleness?.notEnoughData" class="no-data-state">
+		<p>{{ staleness?.message }}</p>
+		<small>Add events to your calendar to get personalized insights</small>
+	</div>
+
+	<div *ngIf="!isLoading && !error && staleness?.firstTime" class="first-time-state">
+		<p>Get AI-powered insights about your weekly schedule</p>
+		<button
+			(click)="generateInsights()"
+			[disabled]="isGenerating"
+			class="generate-btn"
+		>
+			{{ isGenerating ? 'Generating...' : 'Generate Weekly Insights' }}
+		</button>
+	</div>
+
+	<div *ngIf="!isLoading && !error && insight && !staleness?.firstTime && !staleness?.notEnoughData" class="insight-content">
+		<div class="insight-meta">
+			<small>Generated {{ formatDate(insight.generatedAt) }}</small>
+			<small *ngIf="insight.eventsAnalyzed">{{ insight.eventsAnalyzed }} events analyzed</small>
+		</div>
+
+		<div class="insight-section observation">
+			<h3>Overview</h3>
+			<p>{{ insight.observation }}</p>
+		</div>
+
+		<div *ngIf="insight.concern" class="insight-section concern">
+			<h3>Attention Needed</h3>
+			<p>{{ insight.concern }}</p>
+		</div>
+
+		<div class="insight-section suggestion">
+			<h3>Suggestion</h3>
+			<p>{{ insight.suggestion }}</p>
+		</div>
+
+		<div *ngIf="insight.urgentActions && insight.urgentActions.length > 0" class="insight-section urgent">
+			<h3>Urgent Actions</h3>
+			<ul>
+				<li *ngFor="let action of insight.urgentActions">{{ action }}</li>
+			</ul>
+		</div>
+
+		<div class="insight-section encouragement">
+			<p>{{ insight.encouragement }}</p>
+		</div>
+
+		<div *ngIf="staleness?.stale" class="stale-notice">
+			<p class="stale-reason">{{ staleness?.reason }}</p>
+			<button
+				(click)="generateInsights()"
+				[disabled]="isGenerating"
+				class="refresh-btn"
+			>
+				{{ isGenerating ? 'Generating...' : 'Refresh Insights' }}
+			</button>
+		</div>
+	</div>
+</div>

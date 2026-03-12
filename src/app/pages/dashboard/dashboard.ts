@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { UpcomingEvents } from '../../widgets/upcoming-events/upcoming-events';
-import { Analytics } from '../../widgets/analytics/analytics';
+import { CalendarInsights } from '../../widgets/calendar-insights/calendar-insights';
 
 interface SavedFlashcard {
   id: number;
@@ -15,7 +15,7 @@ interface SavedFlashcard {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, UpcomingEvents, Analytics],
+  imports: [CommonModule, UpcomingEvents, CalendarInsights],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })

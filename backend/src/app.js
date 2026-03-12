@@ -6,6 +6,7 @@ import eventsRoutes from './routes/events.routes.js';
 import sessionsRoutes from './routes/sessions.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import flashcardsRoutes from './routes/flashcards.routes.js';
+import calendarInsightRoutes from './routes/calendar-insights.routes.js';
 import prisma from './config/prisma.js';
 
 const app = express();
@@ -40,6 +41,7 @@ app.use('/api/events', eventsRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/flashcards', flashcardsRoutes);
+app.use('/api/calendar-insights', calendarInsightRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ message: 'Backend is running' });

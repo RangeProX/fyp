@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, ChangeDetectorRef, Component, HostListener, NgZone, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, HostListener, NgZone, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FullCalendarComponent, FullCalendarModule } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import rrulePlugin from '@fullcalendar/rrule';
 import { CalendarApi, CalendarOptions, EventInput } from '@fullcalendar/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CalendarEventResponse, EventsService } from '../../services/events';
 
 @Component({
@@ -17,11 +18,15 @@ import { CalendarEventResponse, EventsService } from '../../services/events';
 })
 export class Calendar implements AfterViewInit {
   private readonly defaultEventColor = '#3788d8';
+  private pendingLinkedEventId: string | null = null;
+  private pendingLinkedOccurrenceStartToken: string | null = null;
 
   constructor(
     private eventsService: EventsService,
     private ngZone: NgZone,
     private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute,
+    private router: Router,
   ) {}
 
   @ViewChild(FullCalendarComponent) calendarComponent?: FullCalendarComponent;
@@ -42,6 +47,7 @@ export class Calendar implements AfterViewInit {
   hasSubmitted = false;
   isDeleting = false;
   isSavingEdit = false;
+  isExportingCalendar = false;
   isDeleteConfirmOpen = false;
   deleteAllRecurringInSeries = false;
   editAllRecurringInSeries = false;
@@ -77,8 +83,36 @@ export class Calendar implements AfterViewInit {
     },
   };
 
+  ngOnInit(): void {
+    this.route.queryParamMap.subscribe((params) => {
+      this.pendingLinkedEventId = params.get('eventId');
+      this.pendingLinkedOccurrenceStartToken = params.get('occurrenceStart');
+    });
+  }
+
   ngAfterViewInit(): void {
     this.loadEvents();
+  }
+
+  exportCalendarAsIcs(): void {
+    if (this.isExportingCalendar) {
+      return;
+    }
+
+    this.isExportingCalendar = true;
+
+    this.eventsService.listEvents().subscribe({
+      next: (events) => {
+        this.downloadCalendarIcs(events);
+        this.isExportingCalendar = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isExportingCalendar = false;
+        window.alert('Failed to export calendar. Please try again.');
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   openModal(): void {
@@ -364,12 +398,125 @@ export class Calendar implements AfterViewInit {
             events: this.calendarEvents,
           };
           this.cdr.detectChanges();
+          this.openPendingLinkedEvent(events);
         });
       },
       error: () => {
         console.error('Failed to load events');
       },
     });
+  }
+
+  private openPendingLinkedEvent(events: CalendarEventResponse[]): void {
+    if (!this.pendingLinkedEventId) {
+      return;
+    }
+
+    const matched = events.find((event) => event.id === this.pendingLinkedEventId);
+    if (!matched) {
+      this.clearPendingLinkedEventParams();
+      return;
+    }
+
+    const calendarApi = this.calendarComponent?.getApi();
+    if (!calendarApi) {
+      return;
+    }
+
+    const startDate = this.pendingLinkedOccurrenceStartToken
+      ? this.parseOccurrenceStartToken(this.pendingLinkedOccurrenceStartToken)
+      : new Date(matched.startTime);
+    const fallbackStart = new Date(matched.startTime);
+    const safeStartDate = startDate && !Number.isNaN(startDate.getTime()) ? startDate : fallbackStart;
+    const durationMs = Math.max(60_000, new Date(matched.endTime).getTime() - new Date(matched.startTime).getTime());
+    const endDate = new Date(safeStartDate.getTime() + durationMs);
+
+    calendarApi.gotoDate(safeStartDate);
+    this.openEventDetailsFromApi({
+      id: matched.id,
+      title: matched.title,
+      start: safeStartDate,
+      end: endDate,
+      backgroundColor: matched.color,
+      extendedProps: {
+        notes: matched.notes ?? '',
+        color: matched.color,
+        rrule: matched.rrule ?? null,
+        seriesId: matched.seriesId ?? null,
+        originalStart: matched.startTime,
+        originalEnd: matched.endTime,
+      },
+    });
+
+    this.clearPendingLinkedEventParams();
+  }
+
+  private clearPendingLinkedEventParams(): void {
+    this.pendingLinkedEventId = null;
+    this.pendingLinkedOccurrenceStartToken = null;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {},
+      replaceUrl: true,
+    });
+  }
+
+  private downloadCalendarIcs(events: CalendarEventResponse[]): void {
+    const generatedAt = new Date();
+    const lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//FYP//Calendar Export//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'X-WR-CALNAME:FYP Calendar',
+      ...events.flatMap((event) => this.buildIcsEventLines(event, generatedAt)),
+      'END:VCALENDAR',
+    ];
+
+    const content = `${lines.map((line) => this.foldIcsLine(line)).join('\r\n')}\r\n`;
+    const file = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    const dateStamp = this.formatLocalDate(generatedAt);
+
+    link.href = url;
+    link.download = `calendar-${dateStamp}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  private buildIcsEventLines(event: CalendarEventResponse, generatedAt: Date): string[] {
+    const lines = [
+      'BEGIN:VEVENT',
+      `UID:${event.id}@fyp-calendar`,
+      `DTSTAMP:${this.formatUtcDateTimeForIcs(generatedAt)}`,
+      `SUMMARY:${this.escapeIcsText(event.title)}`,
+      `DTSTART:${this.formatLocalDateTimeForIcs(event.startTime)}`,
+      `DTEND:${this.formatLocalDateTimeForIcs(event.endTime)}`,
+      'STATUS:CONFIRMED',
+    ];
+
+    if (event.notes && event.notes.trim()) {
+      lines.push(`DESCRIPTION:${this.escapeIcsText(event.notes)}`);
+    }
+
+    if (event.rrule && event.rrule.trim()) {
+      lines.push(`RRULE:${String(event.rrule).trim().toUpperCase()}`);
+    }
+
+    const exdates = this.parseStoredExdates(event.exdates)
+      .map((value) => this.formatOccurrenceTokenForIcs(value))
+      .filter((value): value is string => Boolean(value));
+
+    if (exdates.length) {
+      lines.push(`EXDATE:${exdates.join(',')}`);
+    }
+
+    lines.push('END:VEVENT');
+    return lines;
   }
 
   validateDraft(): void {
@@ -519,6 +666,68 @@ export class Calendar implements AfterViewInit {
     }
   }
 
+  private formatLocalDateTimeForIcs(value: string | Date): string {
+    const date = value instanceof Date ? value : new Date(value);
+    const year = String(date.getFullYear());
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+  }
+
+  private formatUtcDateTimeForIcs(date: Date): string {
+    const year = String(date.getUTCFullYear());
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+    return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
+  }
+
+  private formatOccurrenceTokenForIcs(value: string): string | null {
+    const token = String(value || '').trim();
+    if (!token) {
+      return null;
+    }
+
+    const localMatch = token.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+    if (localMatch) {
+      const [, year, month, day, hours, minutes, seconds = '00'] = localMatch;
+      return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+    }
+
+    const parsed = new Date(token);
+    return Number.isNaN(parsed.getTime()) ? null : this.formatLocalDateTimeForIcs(parsed);
+  }
+
+  private escapeIcsText(value?: string | null): string {
+    return String(value || '')
+      .replace(/\\/g, '\\\\')
+      .replace(/\r\n|\n|\r/g, '\\n')
+      .replace(/;/g, '\\;')
+      .replace(/,/g, '\\,');
+  }
+
+  private foldIcsLine(line: string): string {
+    const maxLength = 75;
+    if (line.length <= maxLength) {
+      return line;
+    }
+
+    let output = '';
+    let cursor = 0;
+    while (cursor < line.length) {
+      const chunk = line.slice(cursor, cursor + maxLength);
+      output += cursor === 0 ? chunk : `\r\n ${chunk}`;
+      cursor += maxLength;
+    }
+
+    return output;
+  }
+
   private formatLocalDate(date: Date): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -534,6 +743,22 @@ export class Calendar implements AfterViewInit {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  }
+
+  private parseOccurrenceStartToken(value: string): Date | null {
+    const token = String(value || '').trim();
+    if (!token) {
+      return null;
+    }
+
+    const localMatch = token.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+    if (localMatch) {
+      const [, year, month, day, hours, minutes, seconds = '00'] = localMatch;
+      return new Date(Number(year), Number(month) - 1, Number(day), Number(hours), Number(minutes), Number(seconds));
+    }
+
+    const parsed = new Date(token);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   private normalizeEventColor(color?: string | null): string {

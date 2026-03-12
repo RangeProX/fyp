@@ -1,5 +1,8 @@
 <div class="container">
 	<div class="calendar-toolbar">
+			<button type="button" class="btn ghost" (click)="exportCalendarAsIcs()" [disabled]="isExportingCalendar">
+				{{ isExportingCalendar ? 'Exporting...' : 'Export Calendar' }}
+			</button>
 		<button type="button" class="btn primary" (click)="openModal()">Add event</button>
 	</div>
 

@@ -1,6 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
+import { of } from 'rxjs';
 
 import { UpcomingEvents } from './upcoming-events';
+import { EventsService } from '../../services/events';
 
 describe('UpcomingEvents', () => {
   let component: UpcomingEvents;
@@ -8,7 +11,21 @@ describe('UpcomingEvents', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [UpcomingEvents]
+      imports: [UpcomingEvents],
+      providers: [
+        {
+          provide: EventsService,
+          useValue: {
+            listEvents: () => of([]),
+          },
+        },
+        {
+          provide: Router,
+          useValue: {
+            navigate: jasmine.createSpy('navigate'),
+          },
+        },
+      ],
     })
     .compileComponents();
 
