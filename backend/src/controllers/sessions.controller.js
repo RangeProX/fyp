@@ -446,6 +446,71 @@ export const deleteSession = async (req, res) => {
   }
 };
 
+export const getMonthlyStats = async (req, res) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Session expired. Please log in again.' });
+  }
+
+  const year = Number(req.query.year);
+  const month = Number(req.query.month);
+
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return res.status(400).json({ message: 'Valid year and month (1-12) are required.' });
+  }
+
+  try {
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 1));
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+
+    const sessions = await prisma.session.findMany({
+      where: {
+        userId,
+        createdAt: {
+          gte: startDate,
+          lt: endDate,
+        },
+      },
+      select: {
+        durationSeconds: true,
+        createdAt: true,
+      },
+    });
+
+    const hoursByDay = {};
+    for (const session of sessions) {
+      const dayKey = session.createdAt.toISOString().slice(0, 10);
+      hoursByDay[dayKey] = (hoursByDay[dayKey] || 0) + session.durationSeconds / 3600;
+    }
+
+    const days = [];
+    let totalHours = 0;
+    let activeDays = 0;
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const hours = Math.round((hoursByDay[dateStr] || 0) * 100) / 100;
+      days.push({ date: dateStr, hours });
+      totalHours += hours;
+      if (hours > 0) activeDays++;
+    }
+
+    res.json({
+      days,
+      stats: {
+        totalHours: Math.round(totalHours * 100) / 100,
+        avgHours: Math.round((totalHours / daysInMonth) * 100) / 100,
+        activeDays,
+      },
+    });
+  } catch (error) {
+    console.error('Get monthly stats error:', error);
+    res.status(500).json({ message: 'Failed to fetch monthly stats.' });
+  }
+};
+
 export const regenerateSessionInsight = async (req, res) => {
   const userId = req.user?.id;
   const sessionId = Number(req.params.id);

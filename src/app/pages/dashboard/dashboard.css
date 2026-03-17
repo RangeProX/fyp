@@ -1,10 +1,4 @@
-.flashcard-widget {
-	margin-top: 12px;
-}
-
-.flashcard-widget p {
-	margin: 0 0 10px;
-}
+/* Layout styles replaced by Tailwind CSS */
 
 .flashcard-state {
 	padding: 12px 14px;
@@ -34,11 +28,11 @@
 
 .flip-card {
 	background-color: transparent;
-	width: 220px;
-	height: 280px;
+	width: 280px;
+	height: 320px;
 	perspective: 1000px;
-	font-family: sans-serif;
-	margin: 6px;
+	font-family: 'Inter', system-ui, sans-serif;
+	margin: 0;
 	cursor: pointer;
 	overflow: visible;
 }
@@ -48,7 +42,7 @@
 	width: 100%;
 	height: 100%;
 	text-align: center;
-	transition: transform 0.8s;
+	transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 	transform-style: preserve-3d;
 	transform-origin: center center;
 }
@@ -59,41 +53,46 @@
 
 .flip-card-front,
 .flip-card-back {
-	box-shadow: 0 8px 14px 0 rgba(0, 0, 0, 0.2);
+	box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 8px 10px -6px rgba(59, 130, 246, 0.1);
 	position: absolute;
 	inset: 0;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
-	gap: 10px;
+	gap: 16px;
 	box-sizing: border-box;
 	-webkit-backface-visibility: hidden;
 	backface-visibility: hidden;
-	border: 1px solid coral;
-	border-radius: 1rem;
-	padding: 14px;
+	border: 1px solid #dbeafe; /* studyBlue-100 */
+	border-radius: 1.5rem;
+	padding: 24px;
 }
 
 .flip-card-front {
-	background: linear-gradient(120deg, bisque 60%, rgb(255, 231, 222) 88%, rgb(255, 211, 195) 40%, rgba(255, 127, 80, 0.603) 48%);
-	color: coral;
+	background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+	color: #1e3a8a; /* studyBlue-900 */
 }
 
 .flip-card-back {
-	background: linear-gradient(120deg, rgb(255, 174, 145) 30%, coral 88%, bisque 40%, rgb(255, 185, 160) 78%);
-	color: white;
+	background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+	color: #1e40af; /* studyBlue-800 */
 	transform: rotateY(180deg);
 }
 
 .flip-card-title {
-	font-size: 1.15rem;
-	font-weight: 800;
+	font-size: 0.875rem;
+	font-weight: 700;
 	text-align: center;
 	margin: 0;
+	letter-spacing: 0.1em;
+	color: #60a5fa; /* studyBlue-400 */
 }
 
 .flip-card-front p,
 .flip-card-back p {
 	margin: 0;
 	word-break: break-word;
+	font-size: 1.125rem;
+	line-height: 1.5;
+	font-weight: 500;
 }

@@ -46,6 +46,8 @@ Thumbs.db
 /backend/users.db
 /backend/data/*.db
 /backend/.env
+/backend/scripts/*
+!/backend/scripts/.gitkeep
 
 # Uploaded files
 /backend/uploads/*

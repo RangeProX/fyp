@@ -129,7 +129,7 @@ export class SessionsList implements OnInit {
     return normalized;
   }
 
-  generateInsight(sessionId: number): void {
+  generateInsight(sessionId: number, force = false): void {
     if (this.isGeneratingInsight) {
       return;
     }
@@ -138,16 +138,21 @@ export class SessionsList implements OnInit {
     this.error = '';
     this.cdr.detectChanges();
 
-    this.http.post<SessionItem>(`${this.apiUrl}/${sessionId}/insight`, {}).subscribe({
+    const endpoint = force
+      ? `${this.apiUrl}/${sessionId}/insight?force=true`
+      : `${this.apiUrl}/${sessionId}/insight`;
+
+    this.http.post<SessionItem>(endpoint, {}).subscribe({
       next: (updatedSession) => {
         this.sessions = this.sessions.map((session) =>
           session.sessionId === sessionId ? updatedSession : session
         );
 
         if (this.selectedSession?.sessionId === sessionId) {
-          this.selectedSession = updatedSession;
+          this.selectedSession = { ...updatedSession };
         }
 
+        this.cdr.detectChanges();
         this.isGeneratingInsight = false;
         this.cdr.detectChanges();
       },

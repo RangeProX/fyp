@@ -22,19 +22,6 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK' });
 });
 
-// development: Get all users (remove in production)
-app.get('/api/users', async (req, res) => {
-  try {
-    const users = await prisma.userAuth.findMany({
-      select: { id: true, username: true, createdAt: true },
-      orderBy: { createdAt: 'desc' },
-    });
-    res.json(users || []);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching users' });
-  }
-});
-
 app.use('/api/auth', authRoutes);
 app.use('/api/files', filesRoutes);
 app.use('/api/events', eventsRoutes);

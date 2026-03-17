@@ -1,6 +1,80 @@
 full-calendar {
   display: block;
+  font-family: 'Inter', system-ui, sans-serif;
   height: 100%;
+}
+
+/* FullCalendar Theme Overrides for deeper integration with modern minimalist blue theme */
+::ng-deep .fc {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  padding: 16px;
+  border: none !important;
+  height: 100%;
+}
+
+::ng-deep .fc-view-harness {
+  height: 100% !important;
+}
+
+::ng-deep .fc-theme-standard td, ::ng-deep .fc-theme-standard th {
+  border-color: #e2e8f0;
+}
+
+/* Header style overriding */
+::ng-deep .fc-col-header-cell {
+  background-color: #3b82f6; /* studyBlue-500 */
+  color: #ffffff;
+  font-weight: 600;
+  padding: 10px 0;
+  border: none !important;
+}
+
+::ng-deep .fc .fc-toolbar-title {
+  color: #1f2937;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+::ng-deep .fc .fc-button-primary {
+  background-color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+::ng-deep .fc .fc-button-primary:hover {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+::ng-deep .fc .fc-button-primary:not(:disabled):active,
+::ng-deep .fc .fc-button-primary:not(:disabled).fc-button-active {
+  background-color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+}
+
+/* Two alternating shades of blue for calendar boxes */
+::ng-deep .fc-daygrid-body tbody tr:nth-child(odd) td.fc-daygrid-day:nth-child(odd),
+::ng-deep .fc-daygrid-body tbody tr:nth-child(even) td.fc-daygrid-day:nth-child(even) {
+  background-color: #eff6ff; /* studyBlue-50 */
+}
+
+::ng-deep .fc-daygrid-body tbody tr:nth-child(even) td.fc-daygrid-day:nth-child(odd),
+::ng-deep .fc-daygrid-body tbody tr:nth-child(odd) td.fc-daygrid-day:nth-child(even) {
+  background-color: #dbeafe; /* studyBlue-100 */
+}
+
+::ng-deep .fc-daygrid-day-number {
+  color: #374151; /* Dark gray text for dates */
+  font-weight: 500;
+  padding: 8px !important;
+}
+
+::ng-deep .fc-day-today {
+  background-color: #bfdbfe !important; /* studyBlue-200 for current day */
 }
 
 .container {
@@ -10,10 +84,55 @@ full-calendar {
 
 .calendar-toolbar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 12px;
+}
+
+.calendar-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  min-width: 120px;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.calendar-select:hover {
+  border-color: #93c5fd;
+  background: #f8fbff;
+}
+
+.calendar-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.calendar-select option {
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.calendar-select-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: #4f46e5;
+  pointer-events: none;
 }
 
 .modal-backdrop {
@@ -334,6 +453,7 @@ full-calendar {
 :host ::ng-deep .fc .fc-daygrid-event {
   min-height: 34px;
   font-size: 14px;
+  cursor: pointer;
 }
 
 :host ::ng-deep .fc .fc-daygrid-block-event .fc-event-main {
@@ -341,11 +461,45 @@ full-calendar {
 }
 
 :host ::ng-deep .fc .fc-daygrid-day-frame {
-  min-height: 120px;
+  min-height: 188px;
+  height: 188px;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+:host ::ng-deep .fc .fc-daygrid-day-top {
+  flex: 0 0 auto;
 }
 
 :host ::ng-deep .fc .fc-daygrid-day-events {
   margin-top: 4px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: visible;
+  padding-right: 2px;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: #93c5fd transparent;
+}
+
+:host ::ng-deep .fc .fc-daygrid-event-harness,
+:host ::ng-deep .fc .fc-daygrid-event-harness-abs {
+  overflow: visible;
+}
+
+:host ::ng-deep .fc .fc-daygrid-day-events::-webkit-scrollbar {
+  width: 6px;
+}
+
+:host ::ng-deep .fc .fc-daygrid-day-events::-webkit-scrollbar-thumb {
+  background: #93c5fd;
+  border-radius: 999px;
+}
+
+:host ::ng-deep .fc .fc-daygrid-day-events::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 :host ::ng-deep .fc .fc-daygrid-day-events .fc-daygrid-event-harness {

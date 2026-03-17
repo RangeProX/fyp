@@ -1,9 +1,36 @@
-<header class="header-bar">
-  <h1 class="app-title">Final Year Project</h1>
-  <div class="user-actions">
-    <div class="user-details">
+<header class="flex justify-between items-center px-6 bg-studyBlue-500 text-white w-full h-[80px]">
+  <h1 class="m-0 text-3xl font-bold tracking-tight">Final Year Project</h1>
+  <div class="flex items-center gap-4">
+    <div class="text-studyBlue-50 text-sm">
       Logged in as {{ username }}
     </div>
-    <button class="logout-button" (click)="logout()">Logout</button>
+    <button class="px-4 py-2 bg-white text-studyBlue-600 rounded-md font-medium hover:bg-studyBlue-50 transition-colors shadow-sm" (click)="openLogoutModal()">Logout</button>
   </div>
 </header>
+
+<div class="fixed inset-0 bg-slate-900/45 backdrop-blur-sm z-[100]" *ngIf="isLogoutModalOpen" (click)="closeLogoutModal()"></div>
+<div class="fixed inset-0 z-[110] flex items-center justify-center p-4" *ngIf="isLogoutModalOpen">
+  <div class="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden" role="dialog" aria-modal="true" aria-label="Logout confirmation" (click)="$event.stopPropagation()">
+    <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-rose-50 to-orange-50/60">
+      <h3 class="text-lg font-semibold text-slate-800 m-0">Confirm Logout</h3>
+      <p class="text-sm text-slate-500 mt-1 mb-0">Are you sure you want to log out?</p>
+    </div>
+
+    <div class="px-5 py-4 bg-slate-50 flex items-center justify-end gap-3">
+      <button
+        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 transition-colors"
+        type="button"
+        (click)="closeLogoutModal()"
+      >
+        Cancel
+      </button>
+      <button
+        class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+        type="button"
+        (click)="confirmLogout()"
+      >
+        Logout
+      </button>
+    </div>
+  </div>
+</div>

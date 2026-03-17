@@ -1,43 +1,63 @@
-<div class="container">
-    <div class="welcome-message">
-    <h1>Hello, {{ username }}!</h1>
+<div class="container mb-12">
+    <div class="welcome-message mb-8">
+    <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-studyBlue-700 to-indigo-600 font-sans tracking-tight">Hello, {{ username }}!</h1>
     </div>
-    <div class="widget-container">
-        <app-upcoming-events></app-upcoming-events>
-        <br>
-        <app-calendar-insights></app-calendar-insights>
-        <br>
-        <div class="flashcard-widget">
-            <p>Flashcards</p>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div class="col-span-1 flex flex-col gap-6">
+            <app-upcoming-events></app-upcoming-events>
+            
+            <div class="flashcard-widget bg-white rounded-xl shadow-sm border border-gray-100 p-6 m-0 w-full">
+                <div class="mb-4 flex items-center justify-between gap-3">
+                    <h2 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-studyBlue-700 to-indigo-600 flex items-center gap-2">Flashcards</h2>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        (click)="reloadRandomFlashcard()"
+                        [disabled]="flashcardLoading"
+                        [attr.aria-label]="flashcardLoading ? 'Loading flashcard' : 'Load another flashcard'"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" [class.animate-spin]="flashcardLoading" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M5.64 18.36A9 9 0 1018.36 5.64L20 4M4 20l1.64-1.64" />
+                        </svg>
+                        <span>{{ flashcardLoading ? 'Loading' : 'Reload' }}</span>
+                    </button>
+                </div>
 
-            <div *ngIf="flashcardLoading" class="flashcard-state">Loading flashcard...</div>
-            <div *ngIf="flashcardError" class="flashcard-state error">{{ flashcardError }}</div>
-            <div *ngIf="!flashcardLoading && !flashcardError && !randomFlashcard" class="flashcard-state">
-                No saved flashcards yet.
-            </div>
+                <div *ngIf="flashcardLoading" class="flashcard-state">Loading flashcard...</div>
+                <div *ngIf="flashcardError" class="flashcard-state error">{{ flashcardError }}</div>
+                <div *ngIf="!flashcardLoading && !flashcardError && !randomFlashcard" class="flashcard-state">
+                    No saved flashcards yet.
+                </div>
 
-            <div *ngIf="!flashcardLoading && !flashcardError && randomFlashcard" class="ai-list ai-flashcards">
-                <div
-                    class="flip-card"
-                    [class.flipped]="isRandomCardFlipped"
-                    (click)="toggleRandomFlashcard()"
-                    role="button"
-                    tabindex="0"
-                    (keydown.enter)="toggleRandomFlashcard()"
-                    (keydown.space)="toggleRandomFlashcard(); $event.preventDefault()"
-                >
-                    <div class="flip-card-inner">
-                        <div class="flip-card-front">
-                            <p class="flip-card-title">QUESTION</p>
-                            <p>{{ randomFlashcard.front }}</p>
-                        </div>
-                        <div class="flip-card-back">
-                            <p class="flip-card-title">ANSWER</p>
-                            <p>{{ randomFlashcard.back }}</p>
+                <div *ngIf="!flashcardLoading && !flashcardError && randomFlashcard" class="flex justify-center mt-2">
+                    <div
+                        class="flip-card perspective-1000 w-[300px] h-[200px] mx-auto"
+                        [class.flipped]="isRandomCardFlipped"
+                        (click)="toggleRandomFlashcard()"
+                        role="button"
+                        tabindex="0"
+                        (keydown.enter)="toggleRandomFlashcard()"
+                        (keydown.space)="toggleRandomFlashcard(); $event.preventDefault()"
+                    >
+                        <div class="flip-card-inner relative w-full h-full transition-transform duration-500 transform-style-3d cursor-pointer rounded-xl">
+                            <div class="flip-card-front absolute w-full h-full backface-hidden bg-white border border-gray-200 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md transition-shadow">
+                                <p class="text-xs font-bold text-indigo-500 mb-3 tracking-wider">QUESTION</p>
+                                <p class="text-gray-800 text-sm overflow-y-auto font-medium">{{ randomFlashcard.front }}</p>
+                            </div>
+                            <div class="flip-card-back absolute w-full h-full backface-hidden bg-indigo-50 border border-indigo-200 rounded-xl p-5 flex flex-col shadow-sm rotate-y-180">
+                                <p class="text-xs font-bold text-indigo-600 mb-3 tracking-wider">ANSWER</p>
+                                <p class="text-gray-800 text-sm overflow-y-auto">{{ randomFlashcard.back }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="col-span-1 lg:col-span-2 flex flex-col gap-6">
+            <app-study-frequency></app-study-frequency>
+            <app-calendar-insights class="block h-full"></app-calendar-insights>
         </div>
     </div>
 </div>

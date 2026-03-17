@@ -134,3 +134,51 @@ export const deleteSavedFlashcards = async (req, res) => {
     return res.status(500).json({ message: 'Failed to delete flashcards.' });
   }
 };
+
+export const updateSavedFlashcardsGrouping = async (req, res) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Session expired. Please log in again.' });
+  }
+
+  const rawIds = Array.isArray(req.body?.ids) ? req.body.ids : [];
+  const ids = [...new Set(
+    rawIds
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0)
+  )];
+
+  if (ids.length === 0) {
+    return res.status(400).json({ message: 'At least one flashcard must be selected.' });
+  }
+
+  const groupValidation = parseRequiredGroup(req.body?.groupName);
+
+  if (groupValidation.error) {
+    return res.status(400).json({ message: 'Please select or enter a valid grouping name.' });
+  }
+
+  try {
+    const result = await prisma.savedFlashcard.updateMany({
+      where: {
+        userId,
+        id: { in: ids },
+      },
+      data: {
+        group: groupValidation.value,
+      },
+    });
+
+    const skippedCount = Math.max(ids.length - result.count, 0);
+
+    return res.json({
+      message: 'Flashcard grouping updated.',
+      updatedCount: result.count,
+      skippedCount,
+    });
+  } catch (error) {
+    console.error('Update flashcards grouping error:', error);
+    return res.status(500).json({ message: 'Failed to update flashcard grouping.' });
+  }
+};

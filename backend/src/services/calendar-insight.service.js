@@ -24,7 +24,30 @@ export async function checkInsightStaleness(insight, userId) {
     };
   }
 
-  // EDGE CASE 3: Check if user has enough future events
+  // EDGE CASE 3: Check if user has enough events for meaningful insights
+  const timeWindow = getAnalysisTimeWindow();
+
+  // Rule 1: Need at least 5 total events in the 21-day analysis window
+  const totalEventsCount = await prisma.event.count({
+    where: {
+      ownerId: userId,
+      startTime: {
+        gte: timeWindow.start,
+        lte: timeWindow.end
+      }
+    }
+  });
+
+  if (totalEventsCount < 5) {
+    return {
+      stale: false,
+      notEnoughData: true,
+      reason: 'Not enough events',
+      message: 'Add more events to your calendar to get insights'
+    };
+  }
+
+  // Rule 2: If no future events, require enough past data for retrospective insights
   const futureEventsCount = await prisma.event.count({
     where: {
       ownerId: userId,
@@ -32,12 +55,12 @@ export async function checkInsightStaleness(insight, userId) {
     }
   });
 
-  if (futureEventsCount < 3) {
+  if (futureEventsCount === 0 && totalEventsCount < 10) {
     return {
       stale: false,
       notEnoughData: true,
-      reason: 'Not enough upcoming events',
-      message: 'Add at least 3 upcoming events to get meaningful insights'
+      reason: 'No upcoming events',
+      message: 'Add upcoming events to get planning insights'
     };
   }
 

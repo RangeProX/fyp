@@ -1,188 +1,287 @@
-<div class="container">
-    <div class="title">Files</div>
-    <br />
+<div class="container mx-auto pb-4 w-full h-[calc(100vh-140px)] flex flex-col font-sans mb-8">
+    <div class="flex justify-between items-center mb-6 shrink-0">
+        <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-studyBlue-700 to-indigo-600 tracking-tight m-0"> Your Files</h1>
+        <button
+            type="button"
+            routerLink="/public-files"
+            class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 transition-colors shadow-sm"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12M8 12h12M8 17h12M3 7h.01M3 12h.01M3 17h.01" />
+            </svg>
+            Browse Public Files
+        </button>
+    </div>
 
-    <div class="notes-actions">
-        <button class="upload-button" type="button" (click)="triggerFileInput()" [disabled]="uploading">
+    <div class="notes-actions flex flex-wrap gap-3 mb-6 shrink-0 items-center">
+        <button class="flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white bg-studyBlue-600 hover:bg-studyBlue-500 transition-all shadow-sm hover:shadow-md" type="button" (click)="triggerFileInput()" [disabled]="uploading">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
             {{ uploading ? 'Uploading...' : 'Upload Files' }}
         </button>
 
         <ng-container *ngIf="selectedCount > 0">
-            <button class="bulk-button" type="button" (click)="deleteSelectedFiles()">Delete Selected</button>
-            <button class="bulk-button" type="button" (click)="shareSelectedFiles()">Share Selected</button>
-            <button class="bulk-button" type="button" (click)="runAiAction('questions')" [disabled]="isAiLoading">Generate Questions</button>
-            <button class="bulk-button" type="button" (click)="runAiAction('flashcards')" [disabled]="isAiLoading">Generate Flashcards</button>
-            <span class="selection-count">{{ selectedCount }} item(s) selected</span>
+            <button class="px-4 py-2 rounded-lg font-medium text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors shadow-sm" type="button" (click)="deleteSelectedFiles()">Delete Selected</button>
+            <button class="px-4 py-2 rounded-lg font-medium text-amber-700 bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors shadow-sm" type="button" (click)="editSelectedGrouping()">Edit Grouping</button>
+            <button class="px-4 py-2 rounded-lg font-medium text-sky-700 bg-sky-50 border border-sky-100 hover:bg-sky-100 transition-colors shadow-sm" type="button" (click)="shareSelectedFiles()">Share Selected</button>
+            <button class="px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 border border-transparent transition-all shadow-sm hover:shadow-md disabled:opacity-50" type="button" (click)="runAiAction('questions')" [disabled]="isAiLoading">
+                <span class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> Generate Questions</span>
+            </button>
+            <button class="px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-400 hover:to-pink-400 border border-transparent transition-all shadow-sm hover:shadow-md disabled:opacity-50" type="button" (click)="runAiAction('flashcards')" [disabled]="isAiLoading">
+                 <span class="flex items-center gap-1.5"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg> Generate Flashcards</span>
+            </button>
+            <span class="selection-count text-sm text-indigo-600 font-medium ml-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100">{{ selectedCount }} item(s) selected</span>
         </ng-container>
 
-        <input
-            class="search-bar"
-            type="text"
-            placeholder="Search.."
-            [(ngModel)]="searchQuery"
-            (keyup.enter)="searchFiles()"
-        />
-        <button class="search-button" type="button" (click)="searchFiles()">Search</button>
+        <div class="flex ml-auto gap-2">
+            <input
+                class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-studyBlue-500 text-sm"
+                type="text"
+                placeholder="Search.."
+                [(ngModel)]="searchQuery"
+                (keyup.enter)="searchFiles()"
+            />
+            <button class="px-4 py-2 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors shadow-sm" type="button" (click)="searchFiles()">Search</button>
+        </div>
     </div>
 
-    <div *ngIf="message" class="upload-message">{{ message }}</div>
+    <div *ngIf="message" class="upload-message bg-studyBlue-50 text-studyBlue-800 p-4 rounded-lg mb-6 shrink-0">{{ message }}</div>
 
-    <app-notes-list #notesList (selectionCountChange)="onSelectionCountChange($event)"></app-notes-list>
+    <div class="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <app-notes-list class="h-full block overflow-y-auto w-full p-4" #notesList (selectionCountChange)="onSelectionCountChange($event)"></app-notes-list>
+    </div>
 </div>
 
-<input #fileInput class="file-input" type="file" (change)="onFileSelected($event)" />
+<input #fileInput class="file-input hidden" type="file" (change)="onFileSelected($event)" />
+
+<!-- Delete Files Confirmation Modal -->
+<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity" *ngIf="isDeleteFilesModalOpen"></div>
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0" *ngIf="isDeleteFilesModalOpen">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all" role="dialog" aria-modal="true" aria-label="Delete files confirmation" (click)="$event.stopPropagation()">
+        <div class="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-rose-50 to-red-50/50">
+            <h3 class="text-xl font-bold text-slate-800 m-0">Delete Files</h3>
+        </div>
+
+        <div class="px-6 py-5">
+            <p class="text-sm text-slate-600 m-0">
+                Are you sure you want to delete {{ pendingDeleteFilesCount }} selected file(s)? This action cannot be undone.
+            </p>
+        </div>
+
+        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 rounded-b-xl">
+            <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm font-medium transition-colors" type="button" (click)="closeDeleteFilesModal()">Cancel</button>
+            <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors" type="button" (click)="confirmDeleteSelectedFiles()">Delete</button>
+        </div>
+    </div>
+</div>
 
 <!-- Add Notes Modal -->
-<div class="add-notes-backdrop" *ngIf="isAddNotesModalOpen" (click)="closeAddNotesModal()"></div>
-<div class="add-notes-modal" *ngIf="isAddNotesModalOpen" (click)="closeAddNotesModal()">
-    <div class="add-notes-card" role="dialog" aria-modal="true" aria-label="Add notes" (click)="$event.stopPropagation()">
-        <div class="add-notes-header">
-            <h3>Add Notes</h3>
-            <button class="close-modal-btn" type="button" aria-label="Close" (click)="closeAddNotesModal()">×</button>
+<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity" *ngIf="isAddNotesModalOpen"></div>
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0" *ngIf="isAddNotesModalOpen">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all flex flex-col max-h-[90vh]" role="dialog" aria-modal="true" aria-label="Add notes" (click)="$event.stopPropagation()" (keydown.enter)="onUploadModalEnter($event)">
+        <div class="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-sky-50 to-indigo-50/50">
+            <h3 class="text-xl font-bold text-slate-800 m-0">Add Notes</h3>
         </div>
 
-        <div class="option-group">
-            <label class="option-label" for="uploadFileName">File Name</label>
-            <input
-                id="uploadFileName"
-                class="ai-action-input"
-                type="text"
-                maxlength="120"
-                placeholder="Enter a display name"
-                [(ngModel)]="uploadFileName"
-            />
-        </div>
+        <div class="p-6 space-y-5">
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-gray-700" for="uploadFileName">File Name</label>
+                <input
+                    id="uploadFileName"
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-studyBlue-500 w-full text-sm"
+                    type="text"
+                    maxlength="120"
+                    placeholder="Enter a display name"
+                    [(ngModel)]="uploadFileName"
+                />
+            </div>
 
-        <div class="option-group">
-            <span class="option-label">Visibility</span>
-            <div class="option-toggle">
-                <label>
-                    <input
-                        type="radio"
-                        name="visibility"
-                        [checked]="uploadVisibility === 'PRIVATE'"
-                        (change)="setUploadVisibility('PRIVATE')"
-                    />
-                    <span>Private</span>
-                </label>
-                <label>
-                    <input
-                        type="radio"
-                        name="visibility"
-                        [checked]="uploadVisibility === 'PUBLIC'"
-                        (change)="setUploadVisibility('PUBLIC')"
-                    />
-                    <span>Public</span>
-                </label>
+            <div class="flex flex-col gap-2">
+                <label class="text-sm font-semibold text-gray-700" for="uploadGroupingSelect">Choose grouping</label>
+                <select
+                    id="uploadGroupingSelect"
+                    class="px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-studyBlue-500 w-full text-sm"
+                    [(ngModel)]="uploadGroupingSelection"
+                >
+                    <option [ngValue]="ungroupedGroupingOption">Ungrouped (no group)</option>
+                    <option *ngFor="let groupName of existingUploadGroupingNames" [ngValue]="toExistingGroupingOption(groupName)">{{ groupName }}</option>
+                    <option [ngValue]="createGroupingOption">Create new grouping</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-2" *ngIf="isCreatingUploadGrouping">
+                <label class="text-sm font-semibold text-gray-700" for="uploadNewGroupingName">New grouping name</label>
+                <input
+                    id="uploadNewGroupingName"
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-studyBlue-500 w-full text-sm"
+                    type="text"
+                    maxlength="80"
+                    placeholder="Enter new grouping name"
+                    [(ngModel)]="uploadNewGroupingName"
+                />
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-gray-700">Visibility</span>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            class="w-4 h-4 text-studyBlue-600 focus:ring-studyBlue-500 border-gray-300"
+                            type="radio"
+                            name="visibility"
+                            [checked]="uploadVisibility === 'PRIVATE'"
+                            (change)="setUploadVisibility('PRIVATE')"
+                        />
+                        <span class="text-sm text-gray-700">Private</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            class="w-4 h-4 text-studyBlue-600 focus:ring-studyBlue-500 border-gray-300"
+                            type="radio"
+                            name="visibility"
+                            [checked]="uploadVisibility === 'PUBLIC'"
+                            (change)="setUploadVisibility('PUBLIC')"
+                        />
+                        <span class="text-sm text-gray-700">Public</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-gray-700">File Type</span>
+                <div class="flex gap-4 flex-wrap">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            class="w-4 h-4 text-studyBlue-600 focus:ring-studyBlue-500 border-gray-300"
+                            type="radio"
+                            name="fileType"
+                            [checked]="uploadFileType === 'NOTES'"
+                            (change)="setUploadFileType('NOTES')"
+                        />
+                        <span class="text-sm text-gray-700">Notes</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            class="w-4 h-4 text-studyBlue-600 focus:ring-studyBlue-500 border-gray-300"
+                            type="radio"
+                            name="fileType"
+                            [checked]="uploadFileType === 'PAST_YEAR_PAPER'"
+                            (change)="setUploadFileType('PAST_YEAR_PAPER')"
+                        />
+                        <span class="text-sm text-gray-700">Past Year Paper</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            class="w-4 h-4 text-studyBlue-600 focus:ring-studyBlue-500 border-gray-300"
+                            type="radio"
+                            name="fileType"
+                            [checked]="uploadFileType === 'OTHER'"
+                            (change)="setUploadFileType('OTHER')"
+                        />
+                        <span class="text-sm text-gray-700">Other</span>
+                    </label>
+                </div>
+            </div>
+
+            <div
+                class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors"
+                [ngClass]="isDragOver ? 'border-studyBlue-500 bg-studyBlue-50' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'"
+                (click)="chooseFileFromModal()"
+                (dragover)="onUploadDragOver($event)"
+                (dragleave)="onUploadDragLeave($event)"
+                (drop)="onUploadDrop($event)"
+            >
+                <p class="text-gray-700 font-medium mb-1">Drag and drop a file here</p>
+                <p class="text-sm text-gray-500">or click to choose a file</p>
+                <p class="mt-3 text-sm font-semibold text-studyBlue-600 break-words" *ngIf="pendingUploadFile">{{ pendingUploadFile.name }}</p>
             </div>
         </div>
 
-        <div class="option-group">
-            <span class="option-label">File Type</span>
-            <div class="option-toggle">
-                <label>
-                    <input
-                        type="radio"
-                        name="fileType"
-                        [checked]="uploadFileType === 'NOTES'"
-                        (change)="setUploadFileType('NOTES')"
-                    />
-                    <span>Notes</span>
-                </label>
-                <label>
-                    <input
-                        type="radio"
-                        name="fileType"
-                        [checked]="uploadFileType === 'PAST_YEAR_PAPER'"
-                        (change)="setUploadFileType('PAST_YEAR_PAPER')"
-                    />
-                    <span>Past Year Paper</span>
-                </label>
-            </div>
-        </div>
-
-        <div
-            class="upload-drop-zone"
-            [class.drag-over]="isDragOver"
-            (click)="chooseFileFromModal()"
-            (dragover)="onUploadDragOver($event)"
-            (dragleave)="onUploadDragLeave($event)"
-            (drop)="onUploadDrop($event)"
-        >
-            <p class="drop-zone-title">Drag and drop a file here</p>
-            <p class="drop-zone-subtext">or click to choose a file</p>
-            <p class="drop-zone-subtext selected" *ngIf="pendingUploadFile">{{ pendingUploadFile.name }}</p>
-        </div>
-
-        <div class="add-notes-actions">
-            <button class="bulk-button" type="button" [disabled]="!canUploadSelectedFile" (click)="submitUpload()">
+        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 rounded-b-xl">
+            <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm font-medium transition-colors" type="button" (click)="closeAddNotesModal()">Cancel</button>
+            <button class="px-4 py-2 bg-studyBlue-600 hover:bg-studyBlue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" [disabled]="!canUploadSelectedFile" (click)="submitUpload()">
                 {{ uploading ? 'Uploading...' : 'Upload' }}
             </button>
-            <button class="upload-button" type="button" (click)="closeAddNotesModal()">Cancel</button>
         </div>
     </div>
 </div>
 
-<div class="ai-action-backdrop" *ngIf="activeAiModal" (click)="closeAiModal()"></div>
-<div class="ai-action-modal" *ngIf="activeAiModal" (click)="closeAiModal()">
-    <div class="ai-action-card" role="dialog" aria-modal="true" aria-label="AI action" (click)="$event.stopPropagation()">
-        <h3>{{ aiModalTitle }}</h3>
-        <p>{{ aiModalDescription }}</p>
-
-        <div [ngSwitch]="activeAiModal">
-            <!--Generate Questions Modal-->
-            <div *ngSwitchCase="'questions'" class="ai-action-field">
-                <label for="questionsCount">Number of Questions</label>
-                <input
-                    class="ai-action-input"
-                    type="number"
-                    id="questionsCount"
-                    [(ngModel)]="questionsForm.count"
-                    min="3"
-                    max="20"
-                />
-                <label for="difficulty">Difficulty</label>
-                <select id="difficulty" [(ngModel)]="questionsForm.difficulty">
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                </select>
-
-                <label for="type">Question Type</label>
-                <select id="type" [(ngModel)]="questionsForm.type">
-                    <option value="mcq">Multiple Choice</option>
-                    <option value="short">Short Answer</option>
-                    <option value="essay">Essay</option>
-                </select>
-            </div>
-
-            <!--Generate Flashcards Modal-->
-            <div *ngSwitchCase="'flashcards'" class="ai-action-field">
-                <label for="flashcardsCount">Number of Flashcards</label>
-                <input
-                    class="ai-action-input"
-                    type="number"
-                    id="flashcardsCount"
-                    [(ngModel)]="flashcardsForm.count"
-                    min="5"
-                    max="30"
-                />
-                <label for="difficulty">Difficulty</label>
-                <select id="difficulty" [(ngModel)]="flashcardsForm.difficulty">
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                </select>
-            </div>
-
-
+<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 transition-opacity" *ngIf="activeAiModal"></div>
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0" *ngIf="activeAiModal">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all flex flex-col max-h-[90vh]" role="dialog" aria-modal="true" aria-label="AI action" (click)="$event.stopPropagation()">
+        <div class="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-purple-50">
+            <h3 class="text-xl font-bold text-slate-800 m-0 mb-1 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                {{ aiModalTitle }}
+            </h3>
+            <p class="text-sm text-slate-500 m-0 pl-7">{{ aiModalDescription }}</p>
         </div>
 
-        <p class="ai-action-validation" *ngIf="aiValidationMessage">{{ aiValidationMessage }}</p>
+        <div class="p-6">
+            <div [ngSwitch]="activeAiModal">
+                <!--Generate Questions Modal-->
+                <div *ngSwitchCase="'questions'" class="flex flex-col gap-4">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-gray-700" for="questionsCount">Number of Questions</label>
+                        <input
+                            class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-studyBlue-500 w-full text-sm"
+                            type="number"
+                            id="questionsCount"
+                            [(ngModel)]="questionsForm.count"
+                            min="3"
+                            max="20"
+                        />
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-gray-700" for="difficulty">Difficulty</label>
+                        <select class="px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-studyBlue-500 w-full text-sm" id="difficulty" [(ngModel)]="questionsForm.difficulty">
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
 
-        <div class="ai-action-actions">
-            <button class="bulk-button" type="button" [disabled]="!canRunAiAction" (click)="confirmAiAction()">Run</button>
-            <button class="upload-button" type="button" (click)="closeAiModal()">Cancel</button>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-gray-700" for="type">Question Type</label>
+                        <select class="px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-studyBlue-500 w-full text-sm" id="type" [(ngModel)]="questionsForm.type">
+                            <option value="mcq">Multiple Choice</option>
+                            <option value="short">Short Answer</option>
+                            <option value="essay">Essay</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!--Generate Flashcards Modal-->
+                <div *ngSwitchCase="'flashcards'" class="flex flex-col gap-4">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-gray-700" for="flashcardsCount">Number of Flashcards</label>
+                        <input
+                            class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-studyBlue-500 w-full text-sm"
+                            type="number"
+                            id="flashcardsCount"
+                            [(ngModel)]="flashcardsForm.count"
+                            min="5"
+                            max="30"
+                        />
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-semibold text-gray-700" for="difficulty-flashcards">Difficulty</label>
+                        <select class="px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-studyBlue-500 w-full text-sm" id="difficulty-flashcards" [(ngModel)]="flashcardsForm.difficulty">
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <p class="mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg" *ngIf="aiValidationMessage">{{ aiValidationMessage }}</p>
+        </div>
+
+        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 rounded-b-xl">
+            <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm font-medium transition-colors" type="button" (click)="closeAiModal()">Cancel</button>
+            <button class="px-4 py-2 bg-studyBlue-600 hover:bg-studyBlue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" [disabled]="!canRunAiAction" (click)="confirmAiAction()">Run</button>
         </div>
     </div>
 </div>

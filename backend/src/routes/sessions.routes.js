@@ -4,6 +4,7 @@ import aiRateLimitMiddleware from '../middleware/ai-rate-limit.middleware.js';
 import {
   createSession,
   listSessions,
+  getMonthlyStats,
   getSessionById,
   updateSession,
   deleteSession,
@@ -14,6 +15,7 @@ const router = express.Router();
 
 router.post('/', authMiddleware, aiRateLimitMiddleware, createSession);
 router.get('/', authMiddleware, listSessions);
+router.get('/monthly-stats', authMiddleware, getMonthlyStats);
 router.get('/:id', authMiddleware, getSessionById);
 router.post('/:id/insight', authMiddleware, aiRateLimitMiddleware, regenerateSessionInsight);
 router.put('/:id', authMiddleware, updateSession);

@@ -19,6 +19,7 @@ export class Record implements OnDestroy {
   isPaused = false;
   elapsedSeconds = 0;
   isEndSessionModalOpen = false;
+  isSaveSuccessModalOpen = false;
   completedDuration = '';
   focusLevel = 1;
   progress = '';
@@ -53,6 +54,16 @@ export class Record implements OnDestroy {
       this.elapsedSeconds++;
       this.cdr.markForCheck();
     }, 1000);
+  }
+
+  onRecordFormEnter(event: Event) {
+    if (this.isSessionActive) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.startSession();
   }
 
   pauseSession() {
@@ -116,7 +127,7 @@ export class Record implements OnDestroy {
 
         this.closeEndSessionModal(); // close only
         this.resetSessionData();     // reset only after successful POST
-        alert('Session saved successfully!');
+        this.isSaveSuccessModalOpen = true;
         this.cdr.markForCheck();
       },
       error: () => {
@@ -127,8 +138,23 @@ export class Record implements OnDestroy {
     });
   }
 
+  onEndSessionModalEnter(event: Event) {
+    if (!this.isEndSessionModalOpen || this.isSubmitting) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.submitSessionDetails();
+  }
+
   closeEndSessionModal() {
     this.isEndSessionModalOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  closeSaveSuccessModal() {
+    this.isSaveSuccessModalOpen = false;
     this.cdr.markForCheck();
   }
 

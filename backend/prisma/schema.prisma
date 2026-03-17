@@ -33,6 +33,7 @@ enum EventVisibility {
 enum FileType {
   NOTES
   PAST_YEAR_PAPER
+  OTHER
 }
 
 enum FileVisibility {
@@ -44,6 +45,7 @@ model File {
   id           String           @id
   ownerId      Int              @map("owner_id")
   originalName String           @map("original_name")
+  groupName    String?          @map("group_name")
   mimeType     String           @map("mime_type")
   size         Int
   fileType     FileType         @default(NOTES) @map("file_type")

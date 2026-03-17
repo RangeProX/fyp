@@ -1,0 +1,90 @@
+<div class="container mx-auto pb-4 w-full h-[calc(100vh-140px)] flex flex-col font-sans mb-8">
+	<div class="flex justify-between items-center mb-6 shrink-0">
+		<h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-studyBlue-700 to-indigo-600 tracking-tight m-0">Public Files</h1>
+		<button
+			type="button"
+			(click)="goToFiles()"
+			class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+			</svg>
+			Back to Files
+		</button>
+	</div>
+
+	<div class="notes-actions flex flex-wrap gap-3 mb-6 shrink-0 items-center">
+		<p class="text-sm text-gray-500">Browse files shared publicly by users.</p>
+		<div class="flex ml-auto gap-2">
+			<input
+				class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-studyBlue-500 text-sm"
+				type="text"
+				placeholder="Search public files.."
+				[(ngModel)]="searchQuery"
+				(keyup.enter)="searchFiles()"
+			/>
+			<button class="px-4 py-2 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors shadow-sm" type="button" (click)="searchFiles()">Search</button>
+		</div>
+	</div>
+
+	<div class="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-4">
+		<div *ngIf="loading" class="state-message py-12 text-center text-gray-500">Loading public files...</div>
+		<div *ngIf="error && !loading" class="state-message error py-6 text-center text-red-500 bg-red-50 rounded-lg border border-red-100">{{ error }}</div>
+		<div *ngIf="!loading && !error && files.length === 0" class="state-message empty py-16 text-center text-gray-500">No public files found.</div>
+		<div *ngIf="!loading && !error && files.length > 0 && filteredFiles.length === 0" class="state-message empty py-16 text-center text-gray-500">No files match your search.</div>
+
+		<div *ngIf="!loading && !error && filteredFiles.length > 0" class="w-full">
+			<div class="grid grid-cols-12 gap-4 py-3 px-3 mb-2 border-b border-indigo-100 text-xs font-bold text-indigo-900 uppercase tracking-wider bg-indigo-50/50 rounded-t-xl items-center">
+				<div class="col-span-3">File Name</div>
+				<div class="col-span-1">EXT</div>
+				<div class="col-span-2">Type</div>
+				<div class="col-span-1">Visibility</div>
+				<div class="col-span-1">Size</div>
+				<div class="col-span-3">Date Uploaded</div>
+				<div class="col-span-1">Owner</div>
+			</div>
+
+			<div *ngFor="let file of filteredFiles" class="grid grid-cols-12 gap-4 py-3 px-3 border border-transparent rounded-xl items-center transition-all group hover:bg-sky-50 hover:shadow-sm hover:border-sky-100">
+				<div class="col-span-3 font-medium text-gray-800 truncate">
+					<button class="flex items-center gap-2 hover:text-studyBlue-600 transition-colors text-left truncate w-full" type="button" (click)="previewFile(file)" title="Preview file">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-studyBlue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+						</svg>
+						<span class="truncate">{{ file.originalName }}</span>
+					</button>
+				</div>
+
+				<div class="col-span-1">
+					<span class="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded uppercase font-medium">{{ getFileExtension(file) }}</span>
+				</div>
+
+				<div class="col-span-2 flex items-center">
+					<span class="px-2.5 py-1 text-xs font-semibold rounded-full whitespace-nowrap shadow-sm"
+						[ngClass]="{
+							'bg-teal-50 text-teal-700 border border-teal-200': file.fileType === 'NOTES',
+							'bg-indigo-50 text-indigo-700 border border-indigo-200': file.fileType === 'PAST_YEAR_PAPER',
+							'bg-amber-50 text-amber-700 border border-amber-200': file.fileType === 'OTHER',
+							'bg-gray-50 text-gray-600 border border-gray-200': file.fileType !== 'NOTES' && file.fileType !== 'PAST_YEAR_PAPER' && file.fileType !== 'OTHER'
+						}"
+					>
+						<span *ngIf="file.fileType === 'NOTES'">Notes</span>
+						<span *ngIf="file.fileType === 'PAST_YEAR_PAPER'">Past Year Paper</span>
+						<span *ngIf="file.fileType === 'OTHER'">Other</span>
+						<span *ngIf="file.fileType !== 'NOTES' && file.fileType !== 'PAST_YEAR_PAPER' && file.fileType !== 'OTHER'">{{ file.fileType }}</span>
+					</span>
+				</div>
+
+				<div class="col-span-1 text-sm">
+					<span class="flex items-center gap-1.5 text-emerald-600">
+						<div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+						<span class="font-medium">public</span>
+					</span>
+				</div>
+
+				<div class="col-span-1 text-sm text-gray-500 whitespace-nowrap">{{ formatFileSize(file.size) }}</div>
+				<div class="col-span-3 text-sm text-gray-500 whitespace-nowrap truncate">{{ formatDate(file.createdAt) }}</div>
+				<div class="col-span-1 text-sm text-gray-500 truncate" [title]="file.owner?.username">{{ file.owner?.username || 'Unknown' }}</div>
+			</div>
+		</div>
+	</div>
+</div>

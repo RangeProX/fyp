@@ -1,0 +1,59 @@
+<div class="heatmap-widget bg-gradient-to-b from-white to-sky-50/30 rounded-xl shadow-sm border border-sky-100 p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-studyBlue-700 to-indigo-600 flex items-center gap-2">Study Frequency</h2>
+    <div class="flex items-center gap-2">
+      <button class="nav-btn" (click)="prevMonth()" aria-label="Previous month">&#8592;</button>
+      <button class="nav-btn" [class.disabled]="isCurrentMonth" [disabled]="isCurrentMonth" (click)="nextMonth()" aria-label="Next month">&#8594;</button>
+    </div>
+  </div>
+  <div class="month-header">
+    <span class="month-label">{{ monthLabel }}</span>
+  </div>
+
+  <div *ngIf="isLoading" class="state-message">Loading...</div>
+  <div *ngIf="errorMessage" class="state-message error">{{ errorMessage }}</div>
+
+  <div *ngIf="!isLoading && !errorMessage">
+    <div class="weekday-row">
+      <span *ngFor="let day of weekDays" class="weekday-label">{{ day }}</span>
+    </div>
+
+    <div class="calendar-grid">
+      <ng-container *ngFor="let row of calendarGrid">
+        <div *ngFor="let cell of row"
+             class="cell"
+             [class.empty]="cell.isEmpty"
+             [style.backgroundColor]="cell.color"
+             (mouseenter)="showTooltip($event, cell)"
+             (mouseleave)="hideTooltip()">
+        </div>
+      </ng-container>
+    </div>
+
+    <div class="stats-row" *ngIf="hasData">
+      <span>Total: {{ stats.totalHours }}h</span>
+      <span class="stat-divider">|</span>
+      <span>Avg: {{ stats.avgHours }}h/day</span>
+      <span class="stat-divider">|</span>
+      <span>{{ stats.activeDays }} active days</span>
+    </div>
+    <div class="stats-row empty-state" *ngIf="!hasData">
+      No study sessions this month
+    </div>
+
+    <div class="legend-row">
+      <span class="legend-label">Less</span>
+      <span *ngFor="let item of legendItems"
+            class="legend-swatch"
+            [style.backgroundColor]="item.color">
+      </span>
+      <span class="legend-label">More</span>
+    </div>
+  </div>
+
+  <div *ngIf="tooltip.visible" class="tooltip"
+       [style.left.px]="tooltip.x"
+       [style.top.px]="tooltip.y">
+    <span *ngFor="let line of tooltip.text.split('\n')">{{ line }}<br/></span>
+  </div>
+</div>

@@ -1,11 +1,26 @@
-<div class="sidebar-container">
-  <ul class="sidebar-list">
-    <li><a routerLink="/dashboard"><img src="images/dashboard.png" alt="Dashboard"> Dashboard</a></li>
-    <li><a routerLink="/calendar"><img src="images/calendar.png" alt="Calendar"> Calendar</a></li>
-    <li><a routerLink="/sessions-list"><img src="images/record.png" alt="Sessions List"> Sessions List</a></li>
-    <li><a routerLink="/notes"><img src="images/notes.png" alt="Notes"> Files</a></li>
-    <li><a routerLink="/flashcards"><img src="images/flashcards.png" alt="Flashcards"> Flashcards</a></li>
-    <li><a routerLink="/insights"> Insights</a></li>
-  </ul>
-</div>
+<aside class="flex flex-col w-full h-full bg-white border-r border-gray-200 shadow-sm font-sans pt-6">
+  
+  <nav class="flex-1 px-4 space-y-1">
+    <a routerLink="/dashboard" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 hover:text-studyBlue-600 hover:bg-studyBlue-50 transition-colors group">
+      <img src="images/dashboard.png" alt="Dashboard" class="w-5 h-5 mr-3 opacity-70 group-hover:opacity-100"> 
+      Dashboard
+    </a>
+    <a routerLink="/calendar" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 hover:text-studyBlue-600 hover:bg-studyBlue-50 transition-colors group">
+      <img src="images/calendar.png" alt="Calendar" class="w-5 h-5 mr-3 opacity-70 group-hover:opacity-100"> 
+      Calendar
+    </a>
+    <a routerLink="/sessions-list" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 hover:text-studyBlue-600 hover:bg-studyBlue-50 transition-colors group">
+      <img src="images/record.png" alt="Sessions List" class="w-5 h-5 mr-3 opacity-70 group-hover:opacity-100"> 
+      Sessions List
+    </a>
+    <a routerLink="/notes" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 hover:text-studyBlue-600 hover:bg-studyBlue-50 transition-colors group">
+      <img src="images/notes.png" alt="Notes" class="w-5 h-5 mr-3 opacity-70 group-hover:opacity-100"> 
+      Files
+    </a>
+    <a routerLink="/flashcards" class="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 hover:text-studyBlue-600 hover:bg-studyBlue-50 transition-colors group">
+      <img src="images/flashcards.png" alt="Flashcards" class="w-5 h-5 mr-3 opacity-70 group-hover:opacity-100"> 
+      Flashcards
+    </a>
+  </nav>
+</aside>
 

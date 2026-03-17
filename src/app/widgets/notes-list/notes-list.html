@@ -1,31 +1,30 @@
-<div class="container">
-  <div class="notes-list-wrapper">
-    <div class="list-header">
-      <h2>Your Files</h2>
+<div class="h-full flex flex-col font-sans">
+  <div class="notes-list-wrapper flex-1 overflow-y-auto">
+    <div *ngIf="aiLoading" class="ai-state-message py-8 text-center text-indigo-500 font-medium animate-pulse flex items-center justify-center w-full gap-2 bg-indigo-50/50 rounded-xl mb-6">
+      <svg class="animate-spin h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+      Running AI Magic...
     </div>
-
-    <div *ngIf="aiLoading" class="ai-state-message">Running AI...</div>
-    <div *ngIf="aiError" class="ai-state-message error">{{ aiError }}</div>
+    <div *ngIf="aiError" class="ai-state-message error py-6 text-center text-red-500 bg-red-50 rounded-lg mb-6 border border-red-100">{{ aiError }}</div>
 
     <!-- AI Results Panel -->
-    <div *ngIf="hasAiResult" class="ai-result-panel">
-      <div class="ai-result-header">
-        <h3 *ngIf="aiAction === 'questions'">Generated Questions</h3>
-        <h3 *ngIf="aiAction === 'flashcards'">Generated Flashcards</h3>
-        <button class="ai-clear-btn" type="button" (click)="openClearAiResultModal()">Clear</button>
-        <button class="show-answer-btn" *ngIf="aiAction === 'questions'" type="button" (click)="toggleShowAnswer()">
+    <div *ngIf="hasAiResult" class="ai-result-panel bg-gradient-to-br from-indigo-50 via-white to-studyBlue-50 p-6 rounded-xl border border-indigo-100 shadow-sm mb-6">
+      <div class="ai-result-header flex flex-wrap items-center gap-3 mb-4">
+        <h3 class="text-xl font-bold text-indigo-800 m-0 mr-auto" *ngIf="aiAction === 'questions'">Generated Questions</h3>
+        <h3 class="text-xl font-bold text-indigo-800 m-0 mr-auto" *ngIf="aiAction === 'flashcards'">Generated Flashcards</h3>
+        <button class="px-4 py-2 rounded-lg font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 hover:text-gray-800 transition-colors text-sm shadow-sm" type="button" (click)="openClearAiResultModal()">Clear</button>
+        <button class="px-4 py-2 rounded-lg font-medium text-indigo-700 bg-white border border-indigo-200 hover:bg-indigo-50 transition-colors text-sm shadow-sm" *ngIf="aiAction === 'questions'" type="button" (click)="toggleShowAnswer()">
           {{ showAnswer ? 'Hide Answers' : 'Show Answers' }}
         </button>
-        <button class="select-btn" type="button" *ngIf="aiAction === 'flashcards' && !isSelectingFlashcards" (click)="selectFlashcards()">
+        <button class="px-4 py-2 rounded-lg font-medium text-indigo-700 bg-white border border-indigo-200 hover:bg-indigo-50 transition-colors text-sm shadow-sm" type="button" *ngIf="aiAction === 'flashcards' && !isSelectingFlashcards" (click)="selectFlashcards()">
           Select
         </button>
-        <button class="select-btn" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="savingSelectedFlashcards || flashcardResults.length === 0" (click)="toggleSelectAllFlashcards()">
+        <button class="px-4 py-2 rounded-lg font-medium text-indigo-700 bg-white border border-indigo-200 hover:bg-indigo-50 transition-colors text-sm shadow-sm" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="savingSelectedFlashcards || flashcardResults.length === 0" (click)="toggleSelectAllFlashcards()">
           {{ allFlashcardsSelected ? 'Deselect All' : 'Select All' }}
         </button>
-        <button class="save-btn" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="!canSaveSelectedFlashcards" (click)="openSaveFlashcardsModal()">
+        <button class="px-4 py-2 rounded-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors text-sm shadow-sm disabled:opacity-50" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="!canSaveSelectedFlashcards" (click)="openSaveFlashcardsModal()">
           {{ savingSelectedFlashcards ? 'Saving...' : 'Save' }}
         </button>
-        <button class="cancel-select-btn" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="savingSelectedFlashcards" (click)="cancelSelectFlashcards()">
+        <button class="px-4 py-2 rounded-lg font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-colors text-sm shadow-sm" type="button" *ngIf="aiAction === 'flashcards' && isSelectingFlashcards" [disabled]="savingSelectedFlashcards" (click)="cancelSelectFlashcards()">
           Cancel
         </button>
       </div>
@@ -47,27 +46,29 @@
         </div>
       </div>
 
-      <div *ngIf="aiAction === 'flashcards'" class="ai-list ai-flashcards">
+      <div *ngIf="aiAction === 'flashcards'" class="flex flex-row flex-wrap gap-6 mt-4">
         <div
           *ngFor="let card of flashcardResults; let index = index"
-          class="flip-card"
+          class="flip-card perspective-1000 w-[300px] h-[200px]"
           [class.flipped]="isFlashcardFlipped(index)"
           [class.selection-mode]="isSelectingFlashcards"
-          [class.selected]="isFlashcardSelected(index)"
+          [class.ring-2]="isFlashcardSelected(index)"
+          [class.ring-indigo-500]="isFlashcardSelected(index)"
+          [class.shadow-md]="isFlashcardSelected(index)"
           (click)="toggleFlashcard(index)"
           role="button"
           tabindex="0"
           (keydown.enter)="toggleFlashcard(index)"
           (keydown.space)="toggleFlashcard(index); $event.preventDefault()"
         >
-          <div class="flip-card-inner">
-            <div class="flip-card-front">
-              <p class="flip-card-title">CARD {{ index + 1 }}</p>
-              <p>{{ card.front }}</p>
+          <div class="flip-card-inner relative w-full h-full transition-transform duration-500 transform-style-3d cursor-pointer rounded-xl">
+            <div class="flip-card-front absolute w-full h-full backface-hidden bg-white border border-gray-200 rounded-xl p-5 flex flex-col shadow-sm hover:shadow-md transition-shadow">
+              <p class="text-xs font-bold text-indigo-500 mb-3 tracking-wider">CARD {{ index + 1 }}</p>
+              <p class="text-gray-800 text-sm overflow-y-auto font-medium">{{ card.front }}</p>
             </div>
-            <div class="flip-card-back">
-              <p class="flip-card-title">ANSWER</p>
-              <p>{{ card.back }}</p>
+            <div class="flip-card-back absolute w-full h-full backface-hidden bg-indigo-50 border border-indigo-200 rounded-xl p-5 flex flex-col shadow-sm rotate-y-180">
+              <p class="text-xs font-bold text-indigo-600 mb-3 tracking-wider">ANSWER</p>
+              <p class="text-gray-800 text-sm overflow-y-auto">{{ card.back }}</p>
             </div>
           </div>
         </div>
@@ -80,132 +81,327 @@
 
     </div>
 
-    <div *ngIf="loading" class="state-message">Loading files...</div>
+    <div *ngIf="loading" class="state-message py-12 text-center text-gray-500">Loading files...</div>
     
-    <div *ngIf="error && !loading" class="state-message error">{{ error }}</div>
+    <div *ngIf="error && !loading" class="state-message error py-6 text-center text-red-500 bg-red-50">{{ error }}</div>
     
-    <div *ngIf="!loading && !error && files.length === 0" class="state-message empty">
+    <div *ngIf="!loading && !error && files.length === 0" class="state-message empty py-16 text-center text-gray-500">
       No files uploaded yet.
     </div>
 
-    <div *ngIf="!loading && !error && files.length > 0 && filteredFiles.length === 0" class="state-message empty">
+    <div *ngIf="!loading && !error && files.length > 0 && filteredFiles.length === 0" class="state-message empty py-16 text-center text-gray-500">
       No files match your search.
     </div>
 
-    <div *ngIf="!loading && !error && filteredFiles.length > 0" class="files-table">
-      <div class="table-header">
-        <div class="col-name">File Name</div>
-        <div class="col-extension">Extension</div>  
-        <div class="col-type">Type</div>
-        <div class="col-visibility">Visibility</div>
-        <div class="col-size">Size</div>
-        <div class="col-date">Date Uploaded</div>
-        <div class="col-owner">Owner</div>
-        <div class="col-select">Select</div>
-      </div>
-      <div *ngFor="let file of filteredFiles" class="table-row" [class.selected]="isSelected(file.id)" (click)="toggleSelectFile(file.id)">
-        <div class="col-name">
-          <button class="file-link" type="button" (click)="previewFile(file); $event.stopPropagation()" title="Preview file">
-            {{ file.originalName }}
-          </button>
+    <div *ngIf="!loading && !error && filteredFiles.length > 0" class="w-full flex flex-col gap-4">
+      <section *ngFor="let group of groupedFilteredFiles; trackBy: trackByFileGroupKey" class="rounded-xl border border-sky-100 bg-gradient-to-br from-white to-sky-50/20 shadow-sm overflow-hidden">
+        <button
+          type="button"
+          class="w-full px-4 py-3 flex items-center justify-between gap-3 text-left border-b border-sky-100 hover:bg-sky-50/60 transition-colors"
+          (click)="toggleFileGroup(group.key)"
+        >
+          <span class="font-semibold text-slate-800">{{ group.name }}</span>
+          <span class="flex items-center gap-2 text-xs font-medium text-slate-500">
+            {{ group.files.length }} file(s)
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform" viewBox="0 0 20 20" fill="currentColor" [class.rotate-180]="isFileGroupExpanded(group.key)">
+              <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.158l3.71-3.93a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+            </svg>
+          </span>
+        </button>
+
+        <div *ngIf="isFileGroupExpanded(group.key)" class="p-3">
+          <div class="grid grid-cols-12 gap-4 py-3 px-3 mb-2 border-b border-indigo-100 text-xs font-bold text-indigo-900 uppercase tracking-wider bg-indigo-50/50 rounded-t-xl items-center">
+            <div class="col-span-3">File Name</div>
+            <div class="col-span-1">EXT</div>
+            <div class="col-span-2">Type</div>
+            <div class="col-span-1">Visibility</div>
+            <div class="col-span-1">Size</div>
+            <div class="col-span-2">Date Uploaded</div>
+            <div class="col-span-1">Owner</div>
+            <div class="col-span-1 flex justify-center">Select</div>
+          </div>
+
+          <div *ngFor="let file of group.files" class="grid grid-cols-12 gap-4 py-3 px-3 border border-transparent rounded-xl items-center transition-all cursor-pointer group hover:bg-sky-50 hover:shadow-sm hover:border-sky-100" [class.bg-sky-50]="isSelected(file.id)" [class.border-sky-200]="isSelected(file.id)" [class.shadow-sm]="isSelected(file.id)" (click)="toggleSelectFile(file.id)">
+            <div class="col-span-3 font-medium text-gray-800 truncate">
+              <button class="flex items-center gap-2 hover:text-studyBlue-600 transition-colors text-left truncate w-full" type="button" (click)="previewFile(file); $event.stopPropagation()" title="Preview file">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-studyBlue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span class="truncate">{{ file.originalName }}</span>
+              </button>
+            </div>
+            <div class="col-span-1">
+              <span class="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded uppercase font-medium">{{ getFileExtension(file) }}</span>
+            </div>
+            <div class="col-span-2 flex items-center">
+              <span class="px-2.5 py-1 text-xs font-semibold rounded-full whitespace-nowrap shadow-sm"
+                    [ngClass]="{
+                      'bg-teal-50 text-teal-700 border border-teal-200': file.fileType === 'NOTES',
+                      'bg-indigo-50 text-indigo-700 border border-indigo-200': file.fileType === 'PAST_YEAR_PAPER',
+                      'bg-amber-50 text-amber-700 border border-amber-200': file.fileType === 'OTHER',
+                      'bg-gray-50 text-gray-600 border border-gray-200': file.fileType !== 'NOTES' && file.fileType !== 'PAST_YEAR_PAPER' && file.fileType !== 'OTHER'
+                    }">
+                <span *ngIf="file.fileType === 'NOTES'">Notes</span>
+                <span *ngIf="file.fileType === 'PAST_YEAR_PAPER'">Past Year Paper</span>
+                <span *ngIf="file.fileType === 'OTHER'">Other</span>
+                <span *ngIf="file.fileType !== 'NOTES' && file.fileType !== 'PAST_YEAR_PAPER' && file.fileType !== 'OTHER'">{{ file.fileType }}</span>
+              </span>
+            </div>
+            <div class="col-span-1 text-sm">
+              <span class="flex items-center gap-1.5" [ngClass]="file.visibility === 'PUBLIC' ? 'text-emerald-600' : 'text-amber-600'">
+                <div class="w-1.5 h-1.5 rounded-full" [ngClass]="file.visibility === 'PUBLIC' ? 'bg-emerald-500' : 'bg-amber-500'"></div>
+                <span class="font-medium capitalize">{{ file.visibility | lowercase }}</span>
+              </span>
+            </div>
+            <div class="col-span-1 text-sm text-gray-500 whitespace-nowrap">{{ formatFileSize(file.size) }}</div>
+            <div class="col-span-2 text-sm text-gray-500 whitespace-nowrap truncate">{{ formatDate(file.createdAt) }}</div>
+            <div class="col-span-1 text-sm text-gray-500 truncate" [title]="file.owner?.username">{{ file.owner?.username || 'Unknown' }}</div>
+            <div class="col-span-1 flex justify-center">
+              <input
+                type="checkbox"
+                class="w-4 h-4 text-studyBlue-600 border-gray-300 rounded focus:ring-studyBlue-500 cursor-pointer"
+                [checked]="isSelected(file.id)"
+                (change)="toggleSelectFile(file.id)"
+                aria-label="Select file"
+                (click)="$event.stopPropagation()"
+              >
+            </div>
+          </div>
         </div>
-        <div class="col-extension">{{ getFileExtension(file) }}</div>
-        <div class="col-type">{{ file.fileType }}</div>
-        <div class="col-visibility">{{ file.visibility }}</div>
-        <div class="col-size">{{ formatFileSize(file.size) }}</div>
-        <div class="col-date">{{ formatDate(file.createdAt) }}</div>
-        <div class="col-owner">{{ file.owner?.username || 'Unknown' }}</div>
-        <div class="col-select">
-          <label class="checkbox-wrap" (click)="$event.stopPropagation()">
-            <input
-              type="checkbox"
-              [checked]="isSelected(file.id)"
-              (change)="toggleSelectFile(file.id)"
-              aria-label="Select file"
-            >
-            <span class="checkmark"></span>
-          </label>
-        </div>
-      </div>
+      </section>
     </div>
   </div>
 </div>
 
 <!-- Clear AI Result Modal -->
-<div class="modal-backdrop" *ngIf="clearAiResultModalOpen" (click)="closeClearAiResultModal()"></div>
-<div class="modal" *ngIf="clearAiResultModalOpen" (click)="closeClearAiResultModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    Clear current AI results? This action cannot be undone.
-    <div class="modal-actions">
-      <button class="modal-submit" type="button" (click)="confirmClearAiResult()">
-        Clear
-      </button>
-      <button class="modal-cancel" type="button" (click)="closeClearAiResultModal()">
+<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40" *ngIf="clearAiResultModalOpen"></div>
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4" *ngIf="clearAiResultModalOpen">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100" (click)="$event.stopPropagation()">
+    <div class="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50/40">
+      <h3 class="text-lg font-semibold text-slate-800 m-0">Clear AI Results</h3>
+    </div>
+    <div class="px-6 py-5 text-sm text-slate-600">
+      Clear current AI results? This action cannot be undone.
+    </div>
+    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+      <button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 transition-colors" type="button" (click)="closeClearAiResultModal()">
         Cancel
+      </button>
+      <button class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors" type="button" (click)="confirmClearAiResult()">
+        Clear
       </button>
     </div>
   </div>
 </div>
 
 <!-- Share File Modal -->
-<div class="modal-backdrop" *ngIf="shareModalOpen" (click)="closeShareModal()"></div>
-<div class="modal" *ngIf="shareModalOpen" (click)="closeShareModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
-      <h3>Share File</h3>
-      <button class="modal-close" type="button" (click)="closeShareModal()">&times;</button>
+<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40" *ngIf="shareModalOpen"></div>
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4" *ngIf="shareModalOpen">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100" (click)="$event.stopPropagation()">
+    <div class="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-sky-50 to-indigo-50/40">
+      <h3 class="text-lg font-semibold text-slate-800 m-0">Share File</h3>
     </div>
-    <div class="modal-body">
-      <label class="modal-label" for="share-username">Username</label>
-      <input
-        id="share-username"
-        class="modal-input"
-        type="text"
-        [(ngModel)]="shareUsername"
-        placeholder="Enter username"
-        [disabled]="shareSubmitting"
-      >
+    <div class="px-6 py-5 space-y-4">
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-slate-700" for="share-username">Username</label>
+        <input
+          id="share-username"
+          class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-studyBlue-500"
+          type="text"
+          [(ngModel)]="shareUsername"
+          placeholder="Enter username to share"
+          [disabled]="shareSubmitting"
+        >
+      </div>
 
-      <div *ngIf="shareError" class="modal-error">{{ shareError }}</div>
+      <div class="space-y-2">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-sm font-medium text-slate-700 m-0">Shared With</p>
+          <button
+            class="text-xs font-medium text-studyBlue-700 hover:text-studyBlue-800 disabled:opacity-60"
+            type="button"
+            [attr.aria-expanded]="shareTooltipOpen"
+            (click)="toggleShareTooltip()"
+            [disabled]="shareSubmitting"
+          >
+            {{ shareTooltipOpen ? 'Hide list' : 'View list' }}
+          </button>
+        </div>
+
+        <div *ngIf="shareTooltipOpen" class="rounded-xl border border-slate-200 bg-slate-50/80 p-2">
+          <div class="max-h-44 overflow-y-auto pr-1 space-y-1">
+            <div *ngIf="shareUsersLoading" class="px-3 py-2 text-sm text-slate-500">Loading shared users...</div>
+
+            <div *ngIf="!shareUsersLoading && sharedUsers.length === 0" class="px-3 py-2 text-sm text-slate-500">
+              This file is not shared with anyone yet.
+            </div>
+
+            <div *ngFor="let sharedUser of sharedUsers" class="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-white border border-slate-100">
+              <span class="text-sm text-slate-700 truncate">{{ sharedUser.username }}</span>
+              <button
+                class="px-2.5 py-1 rounded-md text-xs font-medium text-red-600 bg-red-50 border border-red-100 hover:bg-red-100 transition-colors disabled:opacity-60"
+                type="button"
+                (click)="removeSharedUser(sharedUser.username)"
+                [disabled]="shareSubmitting"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="shareError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{{ shareError }}</div>
     </div>
-    <div class="modal-actions">
-      <button class="modal-cancel" type="button" (click)="closeShareModal()" [disabled]="shareSubmitting">
+    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+      <button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 transition-colors disabled:opacity-60" type="button" (click)="closeShareModal()" [disabled]="shareSubmitting">
         Cancel
       </button>
-      <button class="modal-submit" type="button" (click)="submitShare()" [disabled]="shareSubmitting">
-        {{ shareSubmitting ? 'Sharing...' : 'Share' }}
+      <button class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-studyBlue-600 hover:bg-studyBlue-700 transition-colors disabled:opacity-60" type="button" (click)="submitShare()" [disabled]="shareSubmitting">
+        {{ shareSubmitting ? 'Working...' : 'Share' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60]" *ngIf="removeUserConfirmModalOpen"></div>
+<div class="fixed inset-0 z-[70] flex items-center justify-center p-4" *ngIf="removeUserConfirmModalOpen">
+  <div class="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-100" (click)="$event.stopPropagation()">
+    <div class="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-rose-50 to-amber-50/60">
+      <h3 class="text-lg font-semibold text-slate-800 m-0">Confirm Removal</h3>
+      <p class="text-sm text-slate-500 mt-1 mb-0">Remove this user from shared access?</p>
+    </div>
+    <div class="px-6 py-5 text-sm text-slate-700 break-all">
+      {{ pendingRemoveUsername }} will no longer have access to this file.
+    </div>
+    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+      <button
+        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 transition-colors disabled:opacity-60"
+        type="button"
+        (click)="closeRemoveUserConfirmModal()"
+        [disabled]="shareSubmitting"
+      >
+        Cancel
+      </button>
+      <button
+        class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-60"
+        type="button"
+        (click)="confirmRemoveSharedUser()"
+        [disabled]="shareSubmitting"
+      >
+        {{ shareSubmitting ? 'Removing...' : 'Remove' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Grouping Modal -->
+<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40" *ngIf="editGroupingModalOpen"></div>
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4" *ngIf="editGroupingModalOpen">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100" (click)="$event.stopPropagation()">
+    <div class="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-amber-50 to-orange-50/40">
+      <h3 class="text-lg font-semibold text-slate-800 m-0">Edit Grouping</h3>
+      <p class="text-sm text-slate-500 mt-1 mb-0">Update grouping for {{ selectedFileIds.size }} selected file(s).</p>
+    </div>
+
+    <div class="px-6 py-5 space-y-4">
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-slate-700" for="grouping-select">Choose grouping</label>
+        <select
+          id="grouping-select"
+          class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-studyBlue-500 bg-white"
+          [(ngModel)]="editGroupingSelection"
+          [disabled]="editGroupingSubmitting"
+        >
+          <option value="">Select grouping</option>
+          <option [ngValue]="ungroupedGroupingOption">Ungrouped (no group)</option>
+          <option *ngFor="let groupName of existingGroupingNames" [ngValue]="toExistingGroupingOption(groupName)">{{ groupName }}</option>
+          <option [ngValue]="createGroupingOption">Create new grouping</option>
+        </select>
+      </div>
+
+      <div *ngIf="isCreatingNewGrouping" class="space-y-2">
+        <label class="block text-sm font-medium text-slate-700" for="new-grouping-input">New grouping name</label>
+        <input
+          id="new-grouping-input"
+          class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-studyBlue-500"
+          type="text"
+          maxlength="80"
+          [(ngModel)]="newGroupingName"
+          [disabled]="editGroupingSubmitting"
+          placeholder="Enter new grouping name"
+        >
+      </div>
+
+      <div *ngIf="editGroupingError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{{ editGroupingError }}</div>
+    </div>
+
+    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+      <button
+        class="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 transition-colors disabled:opacity-60"
+        type="button"
+        (click)="closeEditGroupingModal()"
+        [disabled]="editGroupingSubmitting"
+      >
+        Cancel
+      </button>
+      <button
+        class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-studyBlue-600 hover:bg-studyBlue-700 transition-colors disabled:opacity-60"
+        type="button"
+        (click)="submitEditGrouping()"
+        [disabled]="!canSubmitEditGrouping"
+      >
+        {{ editGroupingSubmitting ? 'Saving...' : 'Apply Grouping' }}
       </button>
     </div>
   </div>
 </div>
 
 <!-- Save Flashcards Modal -->
-<div class="modal-backdrop" *ngIf="saveFlashcardsModalOpen" (click)="closeSaveFlashcardsModal()"></div>
-<div class="modal" *ngIf="saveFlashcardsModalOpen" (click)="closeSaveFlashcardsModal()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <p>Save {{ selectedFlashcardCount }} flashcard{{ selectedFlashcardCount > 1 ? 's' : '' }}?</p>
-    <div class="modal-body">
-      <label class="modal-label" for="flashcard-group">Group</label>
-      <input
-        id="flashcard-group"
-        class="modal-input"
-        type="text"
-        [(ngModel)]="flashcardSetName"
-        placeholder="Enter a name for this group of flashcards"
-        maxlength="60"
-        required
-        [disabled]="savingSelectedFlashcards"
-      >
-      <div *ngIf="saveFlashcardsError" class="modal-error">{{ saveFlashcardsError }}</div>
+<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40" *ngIf="saveFlashcardsModalOpen"></div>
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4" *ngIf="saveFlashcardsModalOpen">
+  <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100" (click)="$event.stopPropagation()">
+    <div class="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-fuchsia-50/30">
+      <h3 class="text-lg font-semibold text-slate-800 m-0">Save Flashcards</h3>
+      <p class="text-sm text-slate-500 mt-1 mb-0">Save {{ selectedFlashcardCount }} flashcard{{ selectedFlashcardCount > 1 ? 's' : '' }} to a group.</p>
     </div>
-    <div class="modal-actions">
-      <button class="modal-submit" type="button" (click)="saveSelectedFlashcards()" [disabled]="!canSubmitSaveFlashcards">
-        {{ savingSelectedFlashcards ? 'Saving...' : 'Save' }}
-      </button>
-      <button class="modal-cancel" type="button" (click)="closeSaveFlashcardsModal()" [disabled]="savingSelectedFlashcards">
+    <div class="px-6 py-5 space-y-3">
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-slate-700" for="flashcard-grouping-select">Choose grouping</label>
+        <select
+          id="flashcard-grouping-select"
+          class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-studyBlue-500 bg-white"
+          [(ngModel)]="saveFlashcardsGroupingSelection"
+          [disabled]="savingSelectedFlashcards"
+        >
+          <option value="">Select grouping</option>
+          <option *ngFor="let groupName of existingGroupingNames" [ngValue]="toExistingGroupingOption(groupName)">{{ groupName }}</option>
+          <option [ngValue]="createGroupingOption">Create new grouping</option>
+        </select>
+      </div>
+
+      <div *ngIf="isCreatingSaveFlashcardsGrouping" class="space-y-2">
+        <label class="block text-sm font-medium text-slate-700" for="flashcard-new-grouping-input">New grouping name</label>
+        <input
+          id="flashcard-new-grouping-input"
+          class="w-full px-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-studyBlue-500"
+          type="text"
+          maxlength="60"
+          [(ngModel)]="saveFlashcardsNewGroupingName"
+          [disabled]="savingSelectedFlashcards"
+          placeholder="Enter new grouping name"
+        >
+      </div>
+
+      <div *ngIf="saveFlashcardsError" class="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{{ saveFlashcardsError }}</div>
+    </div>
+    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+      <button class="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 transition-colors disabled:opacity-60" type="button" (click)="closeSaveFlashcardsModal()" [disabled]="savingSelectedFlashcards">
         Cancel
       </button>
-      
+      <button class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-60" type="button" (click)="saveSelectedFlashcards()" [disabled]="!canSubmitSaveFlashcards">
+        {{ savingSelectedFlashcards ? 'Saving...' : 'Save' }}
+      </button>
     </div>
   </div>
 </div>

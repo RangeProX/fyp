@@ -1,0 +1,2 @@
+-- No SQL changes required for SQLite.
+-- FileType is stored as TEXT; adding OTHER is enforced by the Prisma schema/client.

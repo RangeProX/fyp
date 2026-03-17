@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, ViewChild, ElementRef } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { NotesList } from '../../widgets/notes-list/notes-list';
 
@@ -9,22 +10,28 @@ type AiModalAction = 'questions' | 'flashcards';
 
 @Component({
   selector: 'app-notes',
-  imports: [CommonModule, FormsModule, NotesList],
+  imports: [CommonModule, FormsModule, RouterLink, NotesList],
   templateUrl: './notes.html',
   styleUrl: './notes.css',
 })
 export class Notes {
   readonly maxStagedFiles = 1;
+  readonly createGroupingOption = '__internal_create_grouping_option__';
+  readonly ungroupedGroupingOption = '__internal_ungrouped_grouping_option__';
   uploading = false;
   message = '';
   searchQuery = '';
   selectedCount = 0;
   isAddNotesModalOpen = false;
+  isDeleteFilesModalOpen = false;
+  pendingDeleteFileIds: string[] = [];
   activeAiModal: AiModalAction | null = null;
   pendingUploadFile: File | null = null;
   uploadFileName = '';
+  uploadGroupingSelection = this.ungroupedGroupingOption;
+  uploadNewGroupingName = '';
   uploadVisibility: 'PRIVATE' | 'PUBLIC' = 'PRIVATE';
-  uploadFileType: 'NOTES' | 'PAST_YEAR_PAPER' = 'NOTES';
+  uploadFileType: 'NOTES' | 'PAST_YEAR_PAPER' | 'OTHER' = 'NOTES';
   isDragOver = false;
   questionsForm = { count: 8, difficulty: 'medium', type: 'mcq' };
   flashcardsForm = { count: 12, difficulty: 'medium' };
@@ -54,6 +61,8 @@ export class Notes {
   openAddNotesModal() {
     this.pendingUploadFile = null;
     this.uploadFileName = '';
+    this.uploadGroupingSelection = this.ungroupedGroupingOption;
+    this.uploadNewGroupingName = '';
     this.uploadVisibility = 'PRIVATE';
     this.uploadFileType = 'NOTES';
     this.isDragOver = false;
@@ -136,7 +145,7 @@ export class Notes {
     this.cdr.detectChanges();
   }
 
-  setUploadFileType(value: 'NOTES' | 'PAST_YEAR_PAPER') {
+  setUploadFileType(value: 'NOTES' | 'PAST_YEAR_PAPER' | 'OTHER') {
     this.uploadFileType = value;
     this.cdr.detectChanges();
   }
@@ -174,8 +183,30 @@ export class Notes {
     this.uploadSelectedFile(this.pendingUploadFile);
   }
 
+  onUploadModalEnter(event: Event) {
+    if (!this.isAddNotesModalOpen) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.submitUpload();
+  }
+
   get canUploadSelectedFile() {
     return !!this.pendingUploadFile && !this.uploading;
+  }
+
+  get existingUploadGroupingNames(): string[] {
+    return this.notesList?.existingGroupingNames || [];
+  }
+
+  get isCreatingUploadGrouping() {
+    return this.uploadGroupingSelection === this.createGroupingOption;
+  }
+
+  toExistingGroupingOption(groupName: string): string {
+    return `existing:${encodeURIComponent(String(groupName || '').trim())}`;
   }
 
   private stageUploadFile(file: File) {
@@ -192,9 +223,17 @@ export class Notes {
       return;
     }
 
+    const resolvedGrouping = this.resolveUploadGroupingValue();
+    if (resolvedGrouping === undefined) {
+      this.message = 'Please select a grouping or enter a new grouping name.';
+      this.cdr.detectChanges();
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('fileName', this.uploadFileName.trim());
+    formData.append('groupName', resolvedGrouping || '');
     formData.append('visibility', this.uploadVisibility);
     formData.append('fileType', this.uploadFileType);
 
@@ -227,6 +266,44 @@ export class Notes {
       });
   }
 
+  private resolveUploadGroupingValue(): string | null | undefined {
+    const selection = String(this.uploadGroupingSelection || '').trim();
+
+    if (!selection || selection === this.ungroupedGroupingOption) {
+      return null;
+    }
+
+    if (selection === this.createGroupingOption) {
+      const normalizedNewGroup = this.normalizeGroupingInput(this.uploadNewGroupingName);
+      return normalizedNewGroup || undefined;
+    }
+
+    if (selection.startsWith('existing:')) {
+      const encodedName = selection.slice('existing:'.length);
+      let decodedName = encodedName;
+
+      try {
+        decodedName = decodeURIComponent(encodedName);
+      } catch {
+        decodedName = encodedName;
+      }
+
+      const normalizedExistingGroup = this.normalizeGroupingInput(decodedName);
+      return normalizedExistingGroup || null;
+    }
+
+    return null;
+  }
+
+  private normalizeGroupingInput(value: string): string {
+    const sanitized = String(value || '')
+      .replace(/[\r\n\t]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return sanitized.slice(0, 80);
+  }
+
   deleteSelectedFiles() {
     if (!this.notesList) {
       return;
@@ -237,11 +314,43 @@ export class Notes {
       return;
     }
 
-    if (!confirm(`Delete ${ids.length} selected file(s)?`)) {
+    this.pendingDeleteFileIds = ids;
+    this.isDeleteFilesModalOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closeDeleteFilesModal() {
+    this.isDeleteFilesModalOpen = false;
+    this.pendingDeleteFileIds = [];
+    this.cdr.detectChanges();
+  }
+
+  confirmDeleteSelectedFiles() {
+    if (!this.notesList || this.pendingDeleteFileIds.length === 0) {
+      this.closeDeleteFilesModal();
       return;
     }
 
-    this.notesList.deleteFiles(ids);
+    const fileIds = [...this.pendingDeleteFileIds];
+    this.closeDeleteFilesModal();
+    this.notesList.deleteFiles(fileIds);
+  }
+
+  get pendingDeleteFilesCount() {
+    return this.pendingDeleteFileIds.length;
+  }
+
+  editSelectedGrouping() {
+    if (!this.notesList) {
+      return;
+    }
+
+    const ids = this.notesList.getSelectedIds();
+    if (ids.length === 0) {
+      return;
+    }
+
+    this.notesList.openEditGroupingModal();
   }
 
   shareSelectedFiles() {

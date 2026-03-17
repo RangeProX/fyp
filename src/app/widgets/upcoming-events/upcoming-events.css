@@ -1,103 +1,4 @@
-/* From Uiverse.io by juyi_2230 */ 
-.meeting-card {
-  background-color: #e9eeea;
-  border-radius: 2rem;
-  padding: 1.5rem;
-  width: 100%;
-  max-width: 380px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.title {
-  font-size: 1.875rem;
-  font-weight: bold;
-  line-height: 1.2;
-}
-
-.state-text {
-  margin: 0;
-  padding: 12px 10px;
-  border-radius: 12px;
-  background-color: #ffffff;
-  color: #334155;
-  font-size: 0.92rem;
-  text-align: center;
-}
-
-.state-text.error {
-  color: #b42318;
-}
-
-.calls-info {
-  display: flex;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.calls-info span {
-  margin-left: 0.5rem;
-  font-size: 0.875rem;
-}
-
-.date-nav-container {
-  background-color: white;
-  border-radius: 16px;
-  padding: 8px 6px;
-  margin-bottom: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  gap: 8px;
-}
-
-.day-item {
-  min-width: calc(50% - 8px);
-  border-radius: 14px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
-  background-color: transparent;
-  transition: all 0.2s ease;
-  padding: 8px;
-  margin: 0;
-  border: 1px solid #eef2f7;
-  text-align: left;
-  cursor: pointer;
-  font: inherit;
-}
-
-.day-item:hover {
-  background-color: #f8f8f8;
-}
-
-.day-item:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
-}
-
-.day-active {
-  background-color: #f0ff7a;
-}
-
-.day-number {
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.day-name {
-  font-size: 0.7rem;
-  margin-top: 2px;
-  color: #666;
-}
+/* Layout styles replaced by Tailwind CSS */
 
 .event-title {
   margin-top: 6px;
@@ -115,4 +16,26 @@
   margin-top: 4px;
   font-size: 0.76rem;
   color: #475569;
+}
+
+.date-nav-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+}
+
+.date-nav-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.date-nav-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.date-nav-container::-webkit-scrollbar-thumb {
+  background-color: rgba(99, 102, 241, 0.3);
+  border-radius: 3px;
+}
+
+.date-nav-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(99, 102, 241, 0.5);
 }

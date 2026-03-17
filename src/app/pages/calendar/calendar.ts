@@ -7,7 +7,21 @@ import interactionPlugin from '@fullcalendar/interaction';
 import rrulePlugin from '@fullcalendar/rrule';
 import { CalendarApi, CalendarOptions, EventInput } from '@fullcalendar/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { RRule } from 'rrule';
 import { CalendarEventResponse, EventsService } from '../../services/events';
+
+interface CalendarRenderedOccurrence {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  isMultiDay: boolean;
+  notes: string;
+  color: string;
+  rrule: string | null;
+  seriesId: string | null;
+  sortRank: number;
+}
 
 @Component({
   selector: 'app-calendar',
@@ -18,6 +32,24 @@ import { CalendarEventResponse, EventsService } from '../../services/events';
 })
 export class Calendar implements AfterViewInit {
   private readonly defaultEventColor = '#3788d8';
+  private rawEvents: CalendarEventResponse[] = [];
+  private activeRangeStart: Date | null = null;
+  private activeRangeEnd: Date | null = null;
+  readonly monthOptions = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  readonly yearOptions = Array.from({ length: 151 }, (_, index) => 1970 + index);
   private pendingLinkedEventId: string | null = null;
   private pendingLinkedOccurrenceStartToken: string | null = null;
 
@@ -30,6 +62,8 @@ export class Calendar implements AfterViewInit {
   ) {}
 
   @ViewChild(FullCalendarComponent) calendarComponent?: FullCalendarComponent;
+  selectedMonth = new Date().getMonth();
+  selectedYear = new Date().getFullYear();
   isModalOpen = false;
   isDetailsMode = false;
   isEditingDetails = false;
@@ -68,17 +102,58 @@ export class Calendar implements AfterViewInit {
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin, interactionPlugin, rrulePlugin],
     initialView: 'dayGridMonth',
+    headerToolbar: {
+      left: 'title',
+      right: 'prev,next',
+    },
     editable: true,
     events: [],
+    contentHeight: '100%',
+    height: '100%',
     eventDisplay: 'block',
-    eventTimeFormat: {
-      hour: 'numeric',
-      minute: '2-digit',
-      meridiem: 'short',
-    },
+    displayEventTime: false,
+    eventOrder: (eventA: any, eventB: any) => this.compareCalendarEventOrder(eventA, eventB),
+    eventOrderStrict: true,
     eventClick: (info) => {
+      info.jsEvent?.preventDefault();
+      info.jsEvent?.stopPropagation();
+
       this.ngZone.run(() => {
-        this.openEventDetailsFromApi(info.event);
+        const sourceEventId = String(info.event.extendedProps?.['sourceEventId'] || info.event.id || '').trim();
+        const occurrenceStartToken = String(info.event.extendedProps?.['occurrenceStart'] || '').trim();
+        const occurrenceEndToken = String(info.event.extendedProps?.['occurrenceEnd'] || '').trim();
+        const occurrenceStart = occurrenceStartToken ? this.parseOccurrenceStartToken(occurrenceStartToken) : null;
+        const occurrenceEnd = occurrenceEndToken ? this.parseOccurrenceStartToken(occurrenceEndToken) : null;
+
+        this.openEventDetailsFromApi({
+          id: sourceEventId || info.event.id,
+          title: info.event.title,
+          start: occurrenceStart ?? info.event.start,
+          end: occurrenceEnd ?? info.event.end,
+          backgroundColor: info.event.backgroundColor,
+          extendedProps: {
+            notes: String(info.event.extendedProps?.['notes'] || ''),
+            color: String(info.event.extendedProps?.['color'] || info.event.backgroundColor || ''),
+            rrule: info.event.extendedProps?.['rrule'] ? String(info.event.extendedProps['rrule']) : null,
+            seriesId: info.event.extendedProps?.['seriesId'] ? String(info.event.extendedProps['seriesId']) : null,
+            originalStart: occurrenceStartToken || (info.event.extendedProps?.['originalStart'] ? String(info.event.extendedProps['originalStart']) : undefined),
+            originalEnd: occurrenceEndToken || (info.event.extendedProps?.['originalEnd'] ? String(info.event.extendedProps['originalEnd']) : undefined),
+          },
+        });
+
+        // FullCalendar callbacks can race Angular rendering; force a sync pass.
+        this.cdr.detectChanges();
+      });
+    },
+    datesSet: (arg) => {
+      this.ngZone.run(() => {
+        const current = arg?.view?.currentStart ? new Date(arg.view.currentStart) : new Date();
+        this.selectedMonth = current.getMonth();
+        this.selectedYear = current.getFullYear();
+        this.activeRangeStart = arg?.view?.activeStart ? new Date(arg.view.activeStart) : null;
+        this.activeRangeEnd = arg?.view?.activeEnd ? new Date(arg.view.activeEnd) : null;
+        this.rebuildCalendarEvents();
+        this.cdr.detectChanges();
       });
     },
   };
@@ -91,7 +166,34 @@ export class Calendar implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    const api = this.calendarComponent?.getApi();
+    if (api) {
+      const current = api.getDate();
+      this.selectedMonth = current.getMonth();
+      this.selectedYear = current.getFullYear();
+      this.activeRangeStart = api.view?.activeStart ? new Date(api.view.activeStart) : null;
+      this.activeRangeEnd = api.view?.activeEnd ? new Date(api.view.activeEnd) : null;
+    }
+
     this.loadEvents();
+    this.cdr.detectChanges();
+  }
+
+  onCalendarMonthYearChange(): void {
+    const api = this.calendarComponent?.getApi();
+    if (!api) {
+      return;
+    }
+
+    const safeMonth = Math.min(Math.max(Number(this.selectedMonth), 0), 11);
+    const safeYear = Number(this.selectedYear);
+
+    if (!Number.isFinite(safeYear)) {
+      return;
+    }
+
+    api.gotoDate(new Date(safeYear, safeMonth, 1));
+    this.cdr.detectChanges();
   }
 
   exportCalendarAsIcs(): void {
@@ -117,12 +219,9 @@ export class Calendar implements AfterViewInit {
 
   openModal(): void {
     const calendarApi = this.calendarComponent?.getApi();
-    if (!calendarApi) {
-      return;
-    }
     const now = new Date();
     const end = new Date(now.getTime() + 60 * 60 * 1000);
-    this.pendingCalendar = calendarApi;
+    this.pendingCalendar = calendarApi ?? this.pendingCalendar;
     this.draftTitle = '';
     this.draftStart = this.formatLocalDateTime(now);
     this.draftEnd = this.formatLocalDateTime(end);
@@ -182,6 +281,16 @@ export class Calendar implements AfterViewInit {
     }
   }
 
+  onAddEventModalEnter(event: Event): void {
+    if (!this.isModalOpen || this.isDetailsMode) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    this.saveEvent();
+  }
+
   saveEvent(): void {
     if (this.isDetailsMode && !this.isEditingDetails) {
       this.closeModal();
@@ -190,7 +299,7 @@ export class Calendar implements AfterViewInit {
 
     this.hasSubmitted = true;
     this.validateDraft();
-    if (this.message || !this.pendingCalendar) {
+    if (this.message) {
       return;
     }
 
@@ -392,19 +501,51 @@ export class Calendar implements AfterViewInit {
     this.eventsService.listEvents().subscribe({
       next: (events) => {
         this.ngZone.run(() => {
-          this.calendarEvents = events.map((e) => this.buildCalendarEvent(e));
-          this.calendarOptions = {
-            ...this.calendarOptions,
-            events: this.calendarEvents,
-          };
-          this.cdr.detectChanges();
-          this.openPendingLinkedEvent(events);
+          this.rawEvents = Array.isArray(events) ? events : [];
+          this.rebuildCalendarEvents();
+          this.openPendingLinkedEvent(this.rawEvents);
         });
       },
       error: () => {
         console.error('Failed to load events');
       },
     });
+  }
+
+  private rebuildCalendarEvents(): void {
+    const { start, end } = this.getRenderRange();
+    this.calendarEvents = this.buildCalendarEventsForRange(this.rawEvents, start, end);
+    this.calendarOptions = {
+      ...this.calendarOptions,
+      events: [...this.calendarEvents],
+    };
+    this.cdr.detectChanges();
+    this.refreshCalendarEventRender();
+  }
+
+  private refreshCalendarEventRender(): void {
+    setTimeout(() => {
+      const api = this.calendarComponent?.getApi();
+      if (api) {
+        api.render();
+      }
+      this.cdr.detectChanges();
+    }, 0);
+  }
+
+  private getRenderRange(): { start: Date; end: Date } {
+    if (this.activeRangeStart && this.activeRangeEnd) {
+      return {
+        start: new Date(this.activeRangeStart),
+        end: new Date(this.activeRangeEnd),
+      };
+    }
+
+    const now = new Date();
+    return {
+      start: new Date(now.getFullYear(), now.getMonth(), 1),
+      end: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+    };
   }
 
   private openPendingLinkedEvent(events: CalendarEventResponse[]): void {
@@ -557,49 +698,338 @@ export class Calendar implements AfterViewInit {
   private setModalOpenState(isOpen: boolean): void {
     this.isModalOpen = isOpen;
     this.cdr.detectChanges();
+
+    if (isOpen) {
+      // Ensure the modal paints immediately on the next tick as well.
+      setTimeout(() => {
+        if (this.isModalOpen) {
+          this.cdr.detectChanges();
+        }
+      });
+    }
   }
 
-  private buildCalendarEvent(event: CalendarEventResponse): EventInput {
-    const color = this.normalizeEventColor(event.color);
-    const base = {
-      id: event.id,
-      title: event.title,
-      backgroundColor: color,
-      borderColor: color,
-      textColor: this.getEventTextColor(color),
-      extendedProps: {
-        notes: event.notes ?? '',
-        color,
-        rrule: event.rrule ?? null,
-        seriesId: event.seriesId ?? null,
-        originalStart: event.startTime,
-        originalEnd: event.endTime,
-      },
-    };
+  private buildCalendarEventsForRange(events: CalendarEventResponse[], rangeStart: Date, rangeEnd: Date): EventInput[] {
+    const occurrences = events.flatMap((event) => this.buildEventOccurrencesForRange(event, rangeStart, rangeEnd));
+    const rankedOccurrences = this.applyStartDayOrdering(occurrences);
+    return rankedOccurrences.flatMap((occurrence) => this.splitOccurrenceIntoDailyEvents(occurrence));
+  }
 
-    const parsedRule = this.parseStoredRrule(event.rrule);
-    if (parsedRule) {
-      return {
-        ...base,
-        allDay: false,
-        rrule: {
-          freq: parsedRule.freq,
-          dtstart: this.formatLocalDateTimeWithSeconds(new Date(event.startTime)),
-          ...(parsedRule.until ? { until: this.formatLocalDateTimeWithSeconds(parsedRule.until) } : {}),
-        },
-        ...(event.exdates ? { exdate: this.parseStoredExdates(event.exdates) } : {}),
-        duration: this.buildEventDuration(event.startTime, event.endTime),
-      };
+  private applyStartDayOrdering(occurrences: CalendarRenderedOccurrence[]): CalendarRenderedOccurrence[] {
+    const groupedByStartDay = new Map<string, CalendarRenderedOccurrence[]>();
+
+    occurrences.forEach((occurrence) => {
+      const dayKey = this.formatLocalDate(occurrence.start);
+      const existing = groupedByStartDay.get(dayKey);
+      if (existing) {
+        existing.push(occurrence);
+      } else {
+        groupedByStartDay.set(dayKey, [occurrence]);
+      }
+    });
+
+    groupedByStartDay.forEach((group) => {
+      group.sort((left, right) => {
+        const timeDelta = left.start.getTime() - right.start.getTime();
+        if (timeDelta !== 0) {
+          return timeDelta;
+        }
+
+        const titleDelta = left.title.localeCompare(right.title);
+        if (titleDelta !== 0) {
+          return titleDelta;
+        }
+
+        return left.id.localeCompare(right.id);
+      });
+
+      group.forEach((occurrence, index) => {
+        occurrence.sortRank = index;
+      });
+    });
+
+    return occurrences;
+  }
+
+  private buildEventOccurrencesForRange(event: CalendarEventResponse, rangeStart: Date, rangeEnd: Date): CalendarRenderedOccurrence[] {
+    if (event.rrule) {
+      return this.buildRecurringOccurrencesForRange(event, rangeStart, rangeEnd);
     }
 
-    return { ...base, start: event.startTime, end: event.endTime };
+    const start = new Date(event.startTime);
+    const endRaw = new Date(event.endTime);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(endRaw.getTime())) {
+      return [];
+    }
+
+    const end = endRaw > start ? endRaw : new Date(start.getTime() + 60_000);
+    if (!this.eventOverlapsRange(start, end, rangeStart, rangeEnd)) {
+      return [];
+    }
+
+    return [{
+      id: event.id,
+      title: event.title,
+      start,
+      end,
+      isMultiDay: this.isMultiDayOccurrence(start, end),
+      notes: event.notes ?? '',
+      color: this.normalizeEventColor(event.color),
+      rrule: event.rrule ?? null,
+      seriesId: event.seriesId ?? null,
+      sortRank: 0,
+    }];
   }
 
-  private buildEventDuration(startTime: string, endTime: string): { minutes: number } {
-    const start = new Date(startTime).getTime();
-    const end = new Date(endTime).getTime();
-    const diffMinutes = Math.max(1, Math.round((end - start) / 60000));
-    return { minutes: diffMinutes };
+  private buildRecurringOccurrencesForRange(event: CalendarEventResponse, rangeStart: Date, rangeEnd: Date): CalendarRenderedOccurrence[] {
+    const parsedRule = this.parseStoredRrule(event.rrule);
+    if (!parsedRule) {
+      return [];
+    }
+
+    const rootStart = new Date(event.startTime);
+    const rootEnd = new Date(event.endTime);
+    if (Number.isNaN(rootStart.getTime()) || Number.isNaN(rootEnd.getTime())) {
+      return [];
+    }
+
+    const durationMs = Math.max(60_000, rootEnd.getTime() - rootStart.getTime());
+    const overlapWindowStart = new Date(rangeStart.getTime() - durationMs);
+    const effectiveUntil = parsedRule.until && parsedRule.until < rangeEnd ? parsedRule.until : rangeEnd;
+    const exdateTokenSet = new Set(
+      this.parseStoredExdates(event.exdates)
+        .map((value) => this.parseOccurrenceStartToken(value))
+        .filter((value): value is Date => value instanceof Date && !Number.isNaN(value.getTime()))
+        .map((value) => this.formatLocalDateTimeWithSeconds(value))
+    );
+
+    const rrule = new RRule({
+      freq: parsedRule.freq === 'daily'
+        ? RRule.DAILY
+        : parsedRule.freq === 'weekly'
+          ? RRule.WEEKLY
+          : RRule.MONTHLY,
+      dtstart: rootStart,
+      until: effectiveUntil,
+    });
+
+    const color = this.normalizeEventColor(event.color);
+    const effectiveSeriesId = event.seriesId ?? event.id;
+
+    return rrule
+      .between(overlapWindowStart, rangeEnd, true)
+      .map((occurrenceStart) => {
+        const occurrenceToken = this.formatLocalDateTimeWithSeconds(occurrenceStart);
+        if (exdateTokenSet.has(occurrenceToken)) {
+          return null;
+        }
+
+        const occurrenceEnd = new Date(occurrenceStart.getTime() + durationMs);
+        if (!this.eventOverlapsRange(occurrenceStart, occurrenceEnd, rangeStart, rangeEnd)) {
+          return null;
+        }
+
+        return {
+          id: event.id,
+          title: event.title,
+          start: occurrenceStart,
+          end: occurrenceEnd,
+          isMultiDay: this.isMultiDayOccurrence(occurrenceStart, occurrenceEnd),
+          notes: event.notes ?? '',
+          color,
+          rrule: event.rrule ?? null,
+          seriesId: effectiveSeriesId,
+          sortRank: 0,
+        } as CalendarRenderedOccurrence;
+      })
+      .filter((occurrence): occurrence is CalendarRenderedOccurrence => Boolean(occurrence));
+  }
+
+  private splitOccurrenceIntoDailyEvents(occurrence: CalendarRenderedOccurrence): EventInput[] {
+    const events: EventInput[] = [];
+
+    if (occurrence.end <= occurrence.start) {
+      return events;
+    }
+
+    const originalStart = this.formatLocalDateTimeWithSeconds(occurrence.start);
+    const originalEnd = this.formatLocalDateTimeWithSeconds(occurrence.end);
+
+    let dayCursor = new Date(occurrence.start);
+    dayCursor.setHours(0, 0, 0, 0);
+
+    while (dayCursor < occurrence.end) {
+      const nextDay = new Date(dayCursor);
+      nextDay.setDate(nextDay.getDate() + 1);
+
+      const segmentStart = occurrence.start > dayCursor ? new Date(occurrence.start) : new Date(dayCursor);
+      const segmentEndBoundary = occurrence.end < nextDay ? new Date(occurrence.end) : new Date(nextDay);
+
+      if (segmentEndBoundary > segmentStart) {
+        const segmentEnd = segmentEndBoundary.getTime() === nextDay.getTime()
+          ? new Date(segmentEndBoundary.getTime() - 1000)
+          : segmentEndBoundary;
+
+        if (segmentEnd > segmentStart) {
+          const segmentDayKey = this.formatLocalDate(segmentStart);
+          const segmentId = `${occurrence.id}__${originalStart}__${segmentDayKey}`;
+
+          events.push({
+            id: segmentId,
+            title: occurrence.title,
+            start: this.formatLocalDateTimeWithSeconds(segmentStart),
+            end: this.formatLocalDateTimeWithSeconds(segmentEnd),
+            backgroundColor: occurrence.color,
+            borderColor: occurrence.color,
+            textColor: this.getEventTextColor(occurrence.color),
+            display: 'block',
+            sortRank: occurrence.sortRank,
+            isMultiDay: occurrence.isMultiDay,
+            extendedProps: {
+              sourceEventId: occurrence.id,
+              notes: occurrence.notes,
+              color: occurrence.color,
+              rrule: occurrence.rrule,
+              seriesId: occurrence.seriesId,
+              sortRank: occurrence.sortRank,
+              isMultiDay: occurrence.isMultiDay,
+              originalStart,
+              originalEnd,
+              occurrenceStart: originalStart,
+              occurrenceEnd: originalEnd,
+            },
+          });
+        }
+      }
+
+      dayCursor = nextDay;
+    }
+
+    return events;
+  }
+
+  private eventOverlapsRange(start: Date, end: Date, rangeStart: Date, rangeEnd: Date): boolean {
+    return start < rangeEnd && end > rangeStart;
+  }
+
+  private isMultiDayOccurrence(start: Date, end: Date): boolean {
+    if (end <= start) {
+      return false;
+    }
+
+    const inclusiveEnd = new Date(end.getTime() - 1);
+    return this.formatLocalDate(start) !== this.formatLocalDate(inclusiveEnd);
+  }
+
+  private compareCalendarEventOrder(eventA: any, eventB: any): number {
+    const multiDayPriorityA = this.getEventOrderMultiDayPriority(eventA);
+    const multiDayPriorityB = this.getEventOrderMultiDayPriority(eventB);
+    if (multiDayPriorityA !== multiDayPriorityB) {
+      return multiDayPriorityA - multiDayPriorityB;
+    }
+
+    const rankA = this.getEventOrderSortRank(eventA);
+    const rankB = this.getEventOrderSortRank(eventB);
+    if (rankA !== rankB) {
+      return rankA - rankB;
+    }
+
+    const startA = this.getEventOrderStartTime(eventA);
+    const startB = this.getEventOrderStartTime(eventB);
+    if (startA !== startB) {
+      return startA - startB;
+    }
+
+    const titleA = this.getEventOrderTitle(eventA);
+    const titleB = this.getEventOrderTitle(eventB);
+    const titleCompare = titleA.localeCompare(titleB);
+    if (titleCompare !== 0) {
+      return titleCompare;
+    }
+
+    const idA = this.getEventOrderId(eventA);
+    const idB = this.getEventOrderId(eventB);
+    return idA.localeCompare(idB);
+  }
+
+  private getEventOrderMultiDayPriority(event: any): number {
+    const candidate =
+      event?.extendedProps?.isMultiDay ??
+      event?.isMultiDay ??
+      event?._def?.extendedProps?.isMultiDay ??
+      event?.event?.extendedProps?.isMultiDay;
+
+    if (typeof candidate === 'boolean') {
+      return candidate ? 0 : 1;
+    }
+
+    const occurrenceStart =
+      event?.extendedProps?.occurrenceStart ??
+      event?._def?.extendedProps?.occurrenceStart ??
+      event?.event?.extendedProps?.occurrenceStart;
+    const occurrenceEnd =
+      event?.extendedProps?.occurrenceEnd ??
+      event?._def?.extendedProps?.occurrenceEnd ??
+      event?.event?.extendedProps?.occurrenceEnd;
+
+    return this.eventSpansMultipleDaysForOrder(occurrenceStart, occurrenceEnd) ? 0 : 1;
+  }
+
+  private eventSpansMultipleDaysForOrder(startValue: unknown, endValue: unknown): boolean {
+    const start = new Date(String(startValue || ''));
+    const end = new Date(String(endValue || ''));
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return false;
+    }
+
+    return this.isMultiDayOccurrence(start, end);
+  }
+
+  private getEventOrderSortRank(event: any): number {
+    const candidate =
+      event?.extendedProps?.sortRank ??
+      event?.sortRank ??
+      event?._def?.extendedProps?.sortRank ??
+      event?.event?.extendedProps?.sortRank;
+
+    const parsed = Number(candidate);
+    return Number.isFinite(parsed) ? parsed : this.getEventOrderStartTime(event);
+  }
+
+  private getEventOrderStartTime(event: any): number {
+    const candidates = [
+      event?.start,
+      event?.startTime,
+      event?._instance?.range?.start,
+      event?.event?.start,
+    ];
+
+    for (const candidate of candidates) {
+      if (candidate instanceof Date && !Number.isNaN(candidate.getTime())) {
+        return candidate.getTime();
+      }
+      const parsed = new Date(candidate || '');
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.getTime();
+      }
+    }
+
+    return 0;
+  }
+
+  private getEventOrderTitle(event: any): string {
+    const value = event?.title ?? event?._def?.title ?? event?.event?.title ?? '';
+    return String(value || '');
+  }
+
+  private getEventOrderId(event: any): string {
+    const value =
+      event?.id ??
+      event?._def?.publicId ??
+      event?._instance?.instanceId ??
+      event?.event?.id ??
+      '';
+    return String(value || '');
   }
 
   private parseStoredRrule(rrule?: string | null): { freq: 'daily' | 'weekly' | 'monthly'; until: Date | null } | null {
@@ -807,9 +1237,6 @@ export class Calendar implements AfterViewInit {
     };
   }): void {
     const calendarApi = this.calendarComponent?.getApi();
-    if (!calendarApi) {
-      return;
-    }
 
     const fallbackStart = event.extendedProps?.originalStart
       ? new Date(event.extendedProps.originalStart)
@@ -822,7 +1249,7 @@ export class Calendar implements AfterViewInit {
     const endDate = event.end ?? fallbackEnd;
     const occurrenceStartToken = startDate ? this.formatLocalDateTimeWithSeconds(startDate) : null;
 
-    this.pendingCalendar = calendarApi;
+    this.pendingCalendar = calendarApi ?? this.pendingCalendar;
     this.selectedEventId = event.id;
     this.selectedSeriesId = event.extendedProps?.seriesId ?? null;
     this.selectedOccurrenceStartToken = occurrenceStartToken;

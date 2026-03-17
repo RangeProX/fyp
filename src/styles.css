@@ -1,5 +1,37 @@
-html, body {
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-studyBlue-50 text-gray-800 font-sans;
     margin: 0;
     padding: 0;
     height: 100%;
+  }
+}
+html {
+    height: 100%;
+}
+
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .transform-style-3d {
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+  .backface-hidden {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+  }
+  .rotate-y-180 {
+    transform: rotateY(180deg) translateZ(1px);
+  }
+  .flipped .flip-card-inner {
+    transform: rotateY(180deg) translateZ(1px);
+  }
 }

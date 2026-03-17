@@ -10,6 +10,7 @@ import { Record } from './pages/record/record';
 import { Notes } from './pages/notes/notes';
 import { Flashcard } from './pages/flashcard/flashcard';
 import { SessionsList } from './pages/sessions-list/sessions-list';
+import { PublicFiles } from './pages/public-files/public-files';
 
 export const routes: Routes = [
   //not logged in
@@ -28,6 +29,7 @@ export const routes: Routes = [
       { path: 'sessions-list', component: SessionsList },
       { path: 'record', component: Record },
       { path: 'notes', component: Notes },
+      { path: 'public-files', component: PublicFiles },
       { path: 'flashcards', component: Flashcard }
     ],
   },

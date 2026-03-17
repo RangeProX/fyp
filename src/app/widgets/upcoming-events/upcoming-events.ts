@@ -38,7 +38,7 @@ export class UpcomingEvents implements OnInit {
   loadError = '';
   upcomingEvents: UpcomingEventItem[] = [];
 
-  private readonly maxUpcomingEvents = 6;
+  private readonly maxUpcomingEvents = 5;
   private readonly lookAheadDays = 3;
   private readonly monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'long' });
   private readonly dayFormatter = new Intl.DateTimeFormat('en-US', { weekday: 'short' });

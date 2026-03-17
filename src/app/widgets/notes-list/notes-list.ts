@@ -7,12 +7,13 @@ import { forkJoin } from 'rxjs';
 interface FileItem {
   id: string;
   originalName: string;
+  groupName?: string | null;
   mimeType: string;
   size: number;
   createdAt: string;
   ownerId: string;
   showAnswer?: boolean;
-  fileType?: 'NOTES' | 'PAST_YEAR_PAPER';
+  fileType?: 'NOTES' | 'PAST_YEAR_PAPER' | 'OTHER';
   visibility?: 'PRIVATE' | 'PUBLIC';
   owner?: {
     username: string;
@@ -53,6 +54,24 @@ interface SaveFlashcardsResponse {
   savedCount: number;
 }
 
+interface UpdateGroupingResponse {
+  message?: string;
+  updatedCount?: number;
+  skippedCount?: number;
+}
+
+interface SharedFileUser {
+  username: string;
+  role: string;
+}
+
+interface FileGroup {
+  key: string;
+  name: string;
+  isUngrouped: boolean;
+  files: FileItem[];
+}
+
 @Component({
   selector: 'app-notes-list',
   imports: [CommonModule, FormsModule],
@@ -78,13 +97,27 @@ export class NotesList implements OnInit {
   savingSelectedFlashcards = false;
   saveFlashcardsModalOpen = false;
   clearAiResultModalOpen = false;
-  flashcardSetName = '';
+  saveFlashcardsGroupingSelection = '';
+  saveFlashcardsNewGroupingName = '';
   saveFlashcardsError = '';
   shareModalOpen = false;
   shareTargetId = '';
   shareUsername = '';
   shareError = '';
   shareSubmitting = false;
+  sharedUsers: SharedFileUser[] = [];
+  shareUsersLoading = false;
+  shareTooltipOpen = false;
+  removeUserConfirmModalOpen = false;
+  pendingRemoveUsername = '';
+  expandedFileGroupKeys = new Set<string>();
+  editGroupingModalOpen = false;
+  editGroupingSubmitting = false;
+  editGroupingError = '';
+  editGroupingSelection = '';
+  newGroupingName = '';
+  readonly createGroupingOption = '__internal_create_grouping_option__';
+  readonly ungroupedGroupingOption = '__internal_ungrouped_grouping_option__';
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
@@ -99,7 +132,8 @@ export class NotesList implements OnInit {
     this.http.get<FileItem[]>('/api/files')
       .subscribe({
         next: (data) => {
-          this.files = data;
+          this.files = Array.isArray(data) ? data : [];
+          this.syncExpandedFileGroups(this.files);
           const visibleIds = new Set(this.files.map((file) => file.id));
           Array.from(this.selectedFileIds).forEach((id) => {
             if (!visibleIds.has(id)) {
@@ -142,10 +176,12 @@ export class NotesList implements OnInit {
 
     return this.files.filter((file) => {
       const owner = file.owner?.username || '';
+      const groupName = String(file.groupName || '').trim();
       const type = file.fileType || '';
       const visibility = file.visibility || '';
       const terms = [
         file.originalName,
+        groupName,
         file.mimeType,
         owner,
         type,
@@ -158,6 +194,91 @@ export class NotesList implements OnInit {
       return terms.includes(this.searchQuery);
     });
   }
+
+    get groupedFilteredFiles(): FileGroup[] {
+      const groups = new Map<string, FileGroup>();
+
+      this.filteredFiles.forEach((file) => {
+        const normalizedGroupName = String(file.groupName || '').trim();
+        const key = normalizedGroupName ? `group:${normalizedGroupName.toLowerCase()}` : 'group:__ungrouped__';
+        const name = normalizedGroupName || 'Ungrouped';
+
+        if (!groups.has(key)) {
+          groups.set(key, {
+            key,
+            name,
+            isUngrouped: !normalizedGroupName,
+            files: [],
+          });
+        }
+
+        groups.get(key)?.files.push(file);
+      });
+
+      const groupedArray = Array.from(groups.values());
+      groupedArray.sort((left, right) => {
+        if (left.isUngrouped !== right.isUngrouped) {
+          return left.isUngrouped ? 1 : -1;
+        }
+
+        const nameCompare = left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+        if (nameCompare !== 0) {
+          return nameCompare;
+        }
+
+        return left.key.localeCompare(right.key);
+      });
+
+      groupedArray.forEach((group) => {
+        group.files.sort((left, right) => {
+          const leftTime = new Date(left.createdAt).getTime();
+          const rightTime = new Date(right.createdAt).getTime();
+          return rightTime - leftTime;
+        });
+      });
+
+      return groupedArray;
+    }
+
+    trackByFileGroupKey(_index: number, group: FileGroup) {
+      return group.key;
+    }
+
+    toggleFileGroup(groupKey: string) {
+      if (this.expandedFileGroupKeys.has(groupKey)) {
+        this.expandedFileGroupKeys.delete(groupKey);
+      } else {
+        this.expandedFileGroupKeys.add(groupKey);
+      }
+
+      this.cdr.detectChanges();
+    }
+
+    isFileGroupExpanded(groupKey: string) {
+      return this.expandedFileGroupKeys.has(groupKey);
+    }
+
+    private syncExpandedFileGroups(files: FileItem[]) {
+      const groupKeys = new Set<string>();
+
+      files.forEach((file) => {
+        const normalizedGroupName = String(file.groupName || '').trim();
+        const key = normalizedGroupName ? `group:${normalizedGroupName.toLowerCase()}` : 'group:__ungrouped__';
+        groupKeys.add(key);
+      });
+
+      Array.from(this.expandedFileGroupKeys).forEach((key) => {
+        if (!groupKeys.has(key)) {
+          this.expandedFileGroupKeys.delete(key);
+        }
+      });
+
+      groupKeys.forEach((key) => {
+        if (!this.expandedFileGroupKeys.has(key)) {
+          this.expandedFileGroupKeys.add(key);
+        }
+      });
+    }
 
   getFileExtension(file: FileItem): string {
     const name = file.originalName || '';
@@ -223,6 +344,175 @@ export class NotesList implements OnInit {
 
   getSelectedCount() {
     return this.selectedFileIds.size;
+  }
+
+  get existingGroupingNames(): string[] {
+    const uniqueNames = new Set<string>();
+
+    this.files.forEach((file) => {
+      const name = String(file.groupName || '').trim();
+      if (name) {
+        uniqueNames.add(name);
+      }
+    });
+
+    return Array.from(uniqueNames).sort((left, right) =>
+      left.localeCompare(right, undefined, { sensitivity: 'base' })
+    );
+  }
+
+  get isCreatingNewGrouping() {
+    return this.editGroupingSelection === this.createGroupingOption;
+  }
+
+  get isCreatingSaveFlashcardsGrouping() {
+    return this.saveFlashcardsGroupingSelection === this.createGroupingOption;
+  }
+
+  get canSubmitEditGrouping() {
+    if (this.editGroupingSubmitting || this.selectedFileIds.size === 0) {
+      return false;
+    }
+
+    return this.resolveEditGroupingValue() !== undefined;
+  }
+
+  toExistingGroupingOption(groupName: string): string {
+    return `existing:${encodeURIComponent(String(groupName || '').trim())}`;
+  }
+
+  openEditGroupingModal() {
+    if (this.selectedFileIds.size === 0) {
+      return;
+    }
+
+    const selectedFiles = this.files.filter((file) => this.selectedFileIds.has(file.id));
+    const selectedGroupNames = Array.from(
+      new Set(selectedFiles.map((file) => String(file.groupName || '').trim()))
+    );
+
+    if (selectedGroupNames.length === 1) {
+      const singleGroupName = selectedGroupNames[0];
+      this.editGroupingSelection = singleGroupName
+        ? this.toExistingGroupingOption(singleGroupName)
+        : this.ungroupedGroupingOption;
+    } else {
+      this.editGroupingSelection = '';
+    }
+
+    this.newGroupingName = '';
+    this.editGroupingError = '';
+    this.editGroupingSubmitting = false;
+    this.editGroupingModalOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closeEditGroupingModal() {
+    if (this.editGroupingSubmitting) {
+      return;
+    }
+
+    this.editGroupingModalOpen = false;
+    this.editGroupingError = '';
+    this.editGroupingSelection = '';
+    this.newGroupingName = '';
+    this.cdr.detectChanges();
+  }
+
+  submitEditGrouping() {
+    if (this.editGroupingSubmitting) {
+      return;
+    }
+
+    const selectedIds = this.getSelectedIds();
+    if (selectedIds.length === 0) {
+      this.editGroupingError = 'Select at least one file first.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const resolvedGrouping = this.resolveEditGroupingValue();
+    if (resolvedGrouping === undefined) {
+      this.editGroupingError = 'Please select a grouping or enter a new grouping name.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.editGroupingSubmitting = true;
+    this.editGroupingError = '';
+
+    this.http.patch<UpdateGroupingResponse>('/api/files/grouping', {
+      fileIds: selectedIds,
+      groupName: resolvedGrouping,
+    })
+      .subscribe({
+        next: (response) => {
+          const updatedCount = Number(response?.updatedCount || 0);
+          const skippedCount = Number(response?.skippedCount || 0);
+
+          this.editGroupingSubmitting = false;
+          this.editGroupingModalOpen = false;
+          this.editGroupingError = '';
+          this.editGroupingSelection = '';
+          this.newGroupingName = '';
+
+          if (updatedCount === 0) {
+            alert('No file grouping was updated.');
+          } else if (skippedCount > 0) {
+            alert(`${updatedCount} file(s) updated. ${skippedCount} file(s) skipped (owner-only).`);
+          }
+
+          this.loadFiles();
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          const message = err?.error?.message || err?.statusText || 'Unknown error';
+          this.editGroupingError = 'Failed to update grouping: ' + message;
+          this.editGroupingSubmitting = false;
+          this.cdr.detectChanges();
+        },
+      });
+  }
+
+  private resolveEditGroupingValue(): string | null | undefined {
+    const selection = String(this.editGroupingSelection || '').trim();
+    if (!selection) {
+      return undefined;
+    }
+
+    if (selection === this.ungroupedGroupingOption) {
+      return null;
+    }
+
+    if (selection === this.createGroupingOption) {
+      const normalizedNewGroup = this.normalizeGroupingInput(this.newGroupingName);
+      return normalizedNewGroup || undefined;
+    }
+
+    if (selection.startsWith('existing:')) {
+      const encodedName = selection.slice('existing:'.length);
+      let decodedName = encodedName;
+
+      try {
+        decodedName = decodeURIComponent(encodedName);
+      } catch {
+        decodedName = encodedName;
+      }
+
+      const normalizedExistingGroup = this.normalizeGroupingInput(decodedName);
+      return normalizedExistingGroup || null;
+    }
+
+    return undefined;
+  }
+
+  private normalizeGroupingInput(value: string): string {
+    const sanitized = String(value || '')
+      .replace(/[\r\n\t]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return sanitized.slice(0, 80);
   }
 
   clearSelection() {
@@ -464,7 +754,8 @@ export class NotesList implements OnInit {
     }
 
     this.saveFlashcardsModalOpen = true;
-    this.flashcardSetName = String(this.flashcardSetName || '').trim();
+    this.saveFlashcardsGroupingSelection = '';
+    this.saveFlashcardsNewGroupingName = '';
     this.saveFlashcardsError = '';
 
     this.cdr.detectChanges();
@@ -472,7 +763,8 @@ export class NotesList implements OnInit {
 
   closeSaveFlashcardsModal() {
     this.saveFlashcardsModalOpen = false;
-    this.flashcardSetName = '';
+    this.saveFlashcardsGroupingSelection = '';
+    this.saveFlashcardsNewGroupingName = '';
     this.saveFlashcardsError = '';
 
     this.cdr.detectChanges();
@@ -483,10 +775,10 @@ export class NotesList implements OnInit {
       return;
     }
 
-    const group = String(this.flashcardSetName || '').trim();
+    const group = this.resolveSaveFlashcardsGroupingValue();
 
     if (!group) {
-      this.saveFlashcardsError = 'Group name is required.';
+      this.saveFlashcardsError = 'Please select a grouping or enter a new grouping name.';
       this.cdr.detectChanges();
       return;
     }
@@ -515,7 +807,8 @@ export class NotesList implements OnInit {
           const savedCount = Number(response?.savedCount) || selectedCards.length;
           alert(`${savedCount} flashcard(s) saved.`);
           this.saveFlashcardsModalOpen = false;
-          this.flashcardSetName = '';
+          this.saveFlashcardsGroupingSelection = '';
+          this.saveFlashcardsNewGroupingName = '';
           this.isSelectingFlashcards = false;
           this.selectedFlashcardIndexes.clear();
           this.savingSelectedFlashcards = false;
@@ -531,8 +824,8 @@ export class NotesList implements OnInit {
   }
 
   get canSubmitSaveFlashcards() {
-    const group = String(this.flashcardSetName || '').trim();
-    return this.canSaveSelectedFlashcards && group.length > 0;
+    const group = this.resolveSaveFlashcardsGroupingValue();
+    return this.canSaveSelectedFlashcards && !!group;
   }
 
   get canSaveSelectedFlashcards() {
@@ -545,6 +838,35 @@ export class NotesList implements OnInit {
 
   isFlashcardSelected(index: number) {
     return this.selectedFlashcardIndexes.has(index);
+  }
+
+  private resolveSaveFlashcardsGroupingValue(): string | undefined {
+    const selection = String(this.saveFlashcardsGroupingSelection || '').trim();
+
+    if (!selection) {
+      return undefined;
+    }
+
+    if (selection === this.createGroupingOption) {
+      const normalizedNewGroup = this.normalizeGroupingInput(this.saveFlashcardsNewGroupingName).slice(0, 60);
+      return normalizedNewGroup || undefined;
+    }
+
+    if (selection.startsWith('existing:')) {
+      const encodedName = selection.slice('existing:'.length);
+      let decodedName = encodedName;
+
+      try {
+        decodedName = decodeURIComponent(encodedName);
+      } catch {
+        decodedName = encodedName;
+      }
+
+      const normalizedExistingGroup = this.normalizeGroupingInput(decodedName).slice(0, 60);
+      return normalizedExistingGroup || undefined;
+    }
+
+    return undefined;
   }
 
   private persistAiState() {
@@ -610,14 +932,65 @@ export class NotesList implements OnInit {
     this.shareUsername = '';
     this.shareError = '';
     this.shareSubmitting = false;
+    this.sharedUsers = [];
+    this.shareUsersLoading = false;
+    this.shareTooltipOpen = true;
+    this.removeUserConfirmModalOpen = false;
+    this.pendingRemoveUsername = '';
     this.shareModalOpen = true;
+    this.loadSharedUsers();
     this.cdr.detectChanges();
   }
 
   closeShareModal() {
     this.shareModalOpen = false;
     this.shareError = '';
+    this.shareTooltipOpen = false;
+    this.removeUserConfirmModalOpen = false;
+    this.pendingRemoveUsername = '';
     this.cdr.detectChanges();
+  }
+
+  toggleShareTooltip() {
+    this.shareTooltipOpen = !this.shareTooltipOpen;
+    this.cdr.detectChanges();
+  }
+
+  private loadSharedUsers() {
+    if (!this.shareTargetId) {
+      this.sharedUsers = [];
+      this.shareUsersLoading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.sharedUsers = [];
+    this.shareUsersLoading = true;
+    this.shareError = '';
+    this.cdr.detectChanges();
+
+    this.http.get<{ users?: Array<{ username?: string; role?: string }> }>(`/api/files/${this.shareTargetId}/share-users`)
+      .subscribe({
+        next: (response) => {
+          const users = Array.isArray(response?.users) ? response.users : [];
+          this.sharedUsers = users
+            .map((user) => ({
+              username: String(user?.username || '').trim(),
+              role: String(user?.role || 'viewer').trim().toLowerCase(),
+            }))
+            .filter((user) => Boolean(user.username));
+
+          this.shareUsersLoading = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          const message = err?.error?.message || err?.statusText || 'Unknown error';
+          this.shareError = 'Failed to load shared users: ' + message;
+          this.shareUsersLoading = false;
+          this.sharedUsers = [];
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   submitShare() {
@@ -635,11 +1008,82 @@ export class NotesList implements OnInit {
       .subscribe({
         next: () => {
           this.shareSubmitting = false;
-          this.closeShareModal();
+          this.shareUsername = '';
+          this.shareTooltipOpen = true;
+          this.loadSharedUsers();
         },
         error: (err) => {
           const message = err?.error?.message || err?.statusText || 'Unknown error';
           this.shareError = 'Failed to share file: ' + message;
+          this.shareSubmitting = false;
+          this.cdr.detectChanges();
+        },
+      });
+  }
+
+  removeSharedUser(username: string) {
+    if (this.shareSubmitting) {
+      return;
+    }
+
+    const normalizedUsername = String(username || '').trim();
+    if (!normalizedUsername) {
+      return;
+    }
+
+    this.pendingRemoveUsername = normalizedUsername;
+    this.removeUserConfirmModalOpen = true;
+    this.cdr.detectChanges();
+  }
+
+  closeRemoveUserConfirmModal() {
+    this.removeUserConfirmModalOpen = false;
+    this.pendingRemoveUsername = '';
+    this.cdr.detectChanges();
+  }
+
+  confirmRemoveSharedUser() {
+    if (this.shareSubmitting) {
+      return;
+    }
+
+    const username = this.pendingRemoveUsername;
+    if (!username) {
+      this.removeUserConfirmModalOpen = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.removeUserConfirmModalOpen = false;
+    this.pendingRemoveUsername = '';
+    this.unshareByUsername(username);
+    this.cdr.detectChanges();
+  }
+
+  private unshareByUsername(username: string) {
+    const normalizedUsername = String(username || '').trim();
+    if (!normalizedUsername) {
+      this.shareError = 'Username is required.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.shareSubmitting = true;
+    this.shareError = '';
+
+    this.http.request('delete', `/api/files/${this.shareTargetId}/share`, { body: { username: normalizedUsername } })
+      .subscribe({
+        next: () => {
+          this.shareSubmitting = false;
+          if (this.shareUsername.trim().toLowerCase() === normalizedUsername.toLowerCase()) {
+            this.shareUsername = '';
+          }
+          this.shareTooltipOpen = true;
+          this.loadSharedUsers();
+        },
+        error: (err) => {
+          const message = err?.error?.message || err?.statusText || 'Unknown error';
+          this.shareError = 'Failed to unshare file: ' + message;
           this.shareSubmitting = false;
           this.cdr.detectChanges();
         },
